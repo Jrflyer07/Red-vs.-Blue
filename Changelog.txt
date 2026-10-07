@@ -1,0 +1,28 @@
+Game State & Database (TR-11)
+
+Setup Cosmos DB connection for game data.
+
+Added logic to automatically create initial game state if database is empty.
+
+Scoring Math & Time Banking (TR-12, TR-13)
+
+Created math logic to count live team hold times accurately.
+
+Implemented time banking: when control switches from Red to Blue (or vice versa), previous team's held time is saved.
+
+API Endpoints (api/src/functions/gameState.js)
+
+GET /api/state: Returns current game score & holder.
+
+POST /api/state: Handles team button clicks and updates game state in Cosmos DB.
+
+Automated Unit Testing
+
+Installed Jest test runner.
+
+Created automated tests verifying scoring math and button team switches pass correctly.
+
+Commands to run:
+I installed this : https://nodejs.org/en/download
+Run npm install -g azure-functions-core-tools@4 --unsafe-perm true
+Run tests: cd api -> npm test
