@@ -1,0 +1,5 @@
+FieldName  		Type
+holder			string | null   	(Current team controlling the button ("RED", "BLUE", or null if unassigned).)
+holdStart		timestamp | null 	(UTC timestamp when the current team assumed control. null when idle.)
+redTotal		number			(Total accumulated banked score/time (in seconds or ms) for the Red team prior to the current hold.)
+blueTotal		number			(Total accumulated banked score/time (in seconds or ms) for the Blue team prior to the current hold.)

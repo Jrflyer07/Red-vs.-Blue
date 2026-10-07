@@ -1,14 +1,17 @@
 {
-  "name": "",
+  "name": "redvsblue-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Azure Functions API for Red vs Blue website",
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "test": "jest"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.10.1",
     "@azure/functions": "^4.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^30.5.2"
+  }
 }
