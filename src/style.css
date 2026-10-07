@@ -1,0 +1,4 @@
+body { font-family: system-ui, sans-serif; text-align: center; margin: 0; padding: 2rem; }
+#team { display: inline-block; padding: 0.75rem 1.5rem; border-radius: 999px; font-size: 1.5rem; font-weight: bold; }
+body[data-team="red"] #team { background: #fde2e2; color: #c62828; }
+body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
