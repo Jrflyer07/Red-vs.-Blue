@@ -1,6 +1,6 @@
 const { CosmosClient } = require('@azure/cosmos');
 
-// Use real connection string in runtime, or a dummy connection string during Jest test runs
+// Use real connection string in runtime
 const connectionString =
   process.env.COSMOS_CONNECTION_STRING ||
   'hey here';

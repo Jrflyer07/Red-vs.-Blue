@@ -7,7 +7,7 @@ app.http('gameState', {
   authLevel: 'anonymous',
   route: 'state',
   handler: async (request, context) => {
-    // 1. Get or auto-create document on fresh DB (TR-11)
+    // Get or auto-create document on fresh DB (TR-11)
     const state = await getOrCreateGameState();
 
     // GET: Fetch current state
