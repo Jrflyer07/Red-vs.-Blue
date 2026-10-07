@@ -3,7 +3,7 @@ const { CosmosClient } = require('@azure/cosmos');
 // Use real connection string in runtime, or a dummy connection string during Jest test runs
 const connectionString =
   process.env.COSMOS_CONNECTION_STRING ||
-  'AccountEndpoint=https://red-vs-blue.documents.azure.com/;AccountKey=mkOLWNiqde1ZIaMb80ozME2POtYqSqjZV4NAyAbsw7FhLVwFePTzKUegverAR06wisMF3eA0Lb3QACDbQv2ZoA==;';
+  'hey here';
 
 const client = new CosmosClient(connectionString);
 const database = client.database('redvsblue');
