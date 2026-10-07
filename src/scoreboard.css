@@ -1,0 +1,111 @@
+/* Red vs Blue scoreboard (UR-09, UR-10) - Peyton
+   Every class starts with "sb-" so nothing here can clash with the rest of
+   the page. Fonts and text color are inherited from the page around it. */
+
+.sb {
+  /* Change these two to match the team colors Will uses for the banner. */
+  --sb-red: #e0314b;
+  --sb-blue: #2f7bea;
+
+  max-width: 32rem;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+/* Red on the left, blue on the right. */
+.sb-scores {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.sb-team {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  transition: opacity 200ms;
+}
+
+.sb-team--red {
+  color: var(--sb-red);
+  text-align: left;
+}
+
+.sb-team--blue {
+  color: var(--sb-blue);
+  text-align: right;
+}
+
+.sb-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.sb-score {
+  font-size: clamp(2.25rem, 9vw, 3.5rem);
+  font-weight: 800;
+  /* Every digit the same width, so the number does not wobble as it counts. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* The bar is blue underneath; the red part is laid on top and its width is
+   set by scoreboard.js to red's share of all points. */
+.sb-bar {
+  position: relative;
+  height: 0.875rem;
+  margin-top: 0.5rem;
+  border-radius: 0.5rem;
+  background: var(--sb-blue);
+  overflow: hidden;
+}
+
+.sb-bar-red {
+  width: 50%;
+  height: 100%;
+  background: var(--sb-red);
+  transition: width 250ms linear;
+}
+
+/* A small notch at the halfway mark, so it is obvious who is ahead. */
+.sb-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.sb-timer {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* scoreboard.js sets data-holder to "red", "blue" or "none" on the section.
+   The team that is NOT holding fades back, and the timer takes the holder's
+   color. */
+.sb[data-holder="red"] .sb-team--blue,
+.sb[data-holder="blue"] .sb-team--red {
+  opacity: 0.6;
+}
+
+.sb[data-holder="red"] .sb-timer {
+  color: var(--sb-red);
+}
+
+.sb[data-holder="blue"] .sb-timer {
+  color: var(--sb-blue);
+}
+
+/* Respect people who have asked their device for less animation. */
+@media (prefers-reduced-motion: reduce) {
+  .sb-team,
+  .sb-bar-red {
+    transition: none;
+  }
+}
