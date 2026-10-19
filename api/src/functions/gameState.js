@@ -1,6 +1,7 @@
 const { app } = require('@azure/functions');
 const { game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
+const { buildStateResponse } = require('./shared/stateResponse');
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -12,7 +13,7 @@ app.http('gameState', {
 
     // GET: Fetch current state
     if (request.method === 'GET') {
-      return { status: 200, jsonBody: state };
+      return { status: 200, jsonBody: buildStateResponse(state) };
     }
 
     // POST: Handle button press & switch holders (TR-13)
@@ -28,7 +29,7 @@ app.http('gameState', {
         .item(updatedState.id, updatedState.partitionKey)
         .replace(updatedState);
 
-      return { status: 200, jsonBody: resource };
+      return { status: 200, jsonBody: buildStateResponse(resource) };
     }
 
     return { status: 405, body: 'Method Not Allowed' };
