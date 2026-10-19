@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scoreboard demo - Red vs Blue</title>
+  <link rel="stylesheet" href="scoreboard.css">
+  <style>
+    /* Demo page only. None of this goes into index.html. */
+    body {
+      margin: 0;
+      padding: 1.5rem 1rem 3rem;
+      font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+      color: #1c1f26;
+      background: #f6f7f9;
+    }
+    h1 { font-size: 1.25rem; text-align: center; margin: 0 0 0.25rem; }
+    .demo-note { text-align: center; margin: 0 auto; max-width: 32rem; color: #555b66; }
+    .demo-controls {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+      max-width: 32rem; margin: 2rem auto 0;
+    }
+    .demo-controls button {
+      font: inherit; font-weight: 600; padding: 0.6rem 0.9rem;
+      border: 2px solid #1c1f26; border-radius: 0.5rem; background: #fff; cursor: pointer;
+    }
+    .demo-controls button:focus-visible { outline: 3px solid #2f7bea; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <h1>Scoreboard demo</h1>
+  <p class="demo-note">A fake server stands in for /api/state, so this works with no Azure and no teammates' code.</p>
+
+  <!-- ============ COPY FROM HERE into index.html ============ -->
+  <section class="sb" id="scoreboard" aria-label="Scoreboard">
+    <div class="sb-scores">
+      <div class="sb-team sb-team--red">
+        <span class="sb-name">Red</span>
+        <span class="sb-score" id="sb-red-score">0</span>
+      </div>
+      <div class="sb-team sb-team--blue">
+        <span class="sb-name">Blue</span>
+        <span class="sb-score" id="sb-blue-score">0</span>
+      </div>
+    </div>
+    <div class="sb-bar" aria-hidden="true">
+      <div class="sb-bar-red" id="sb-bar-red"></div>
+    </div>
+    <p class="sb-timer" id="sb-timer">Loading scores…</p>
+  </section>
+  <!-- ============ COPY TO HERE ============ -->
+
+  <div class="demo-controls">
+    <button type="button" onclick="press('red')">Red takes the button</button>
+    <button type="button" onclick="press('blue')">Blue takes the button</button>
+    <button type="button" onclick="skipAhead(3600)">Skip ahead 1 hour</button>
+    <button type="button" onclick="resetGame()">Reset</button>
+  </div>
+
+  <script src="scoreboard.js"></script>
+  <script>
+    // ---- Fake server (demo only) -----------------------------------------
+    // This is the state document Bryce will keep in Cosmos DB.
+    let doc = { holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
+
+    // What /api/state will send back. Same sum as stateResponse.js.
+    function fakeApiState() {
+      const now = Date.now();
+      const held = doc.holder ? (now - doc.holdStart) / 1000 : 0;
+      return {
+        holder: doc.holder,
+        holdStart: doc.holdStart,
+        redScore: doc.redTotal + (doc.holder === 'red' ? held : 0),
+        blueScore: doc.blueTotal + (doc.holder === 'blue' ? held : 0),
+        serverNow: now,
+      };
+    }
+
+    // What /api/press will do: save the old holder's time, then switch.
+    function press(team) {
+      if (doc.holder === team) return; // your team already holds it
+      const now = Date.now();
+      if (doc.holder === 'red') doc.redTotal += (now - doc.holdStart) / 1000;
+      if (doc.holder === 'blue') doc.blueTotal += (now - doc.holdStart) / 1000;
+      doc.holder = team;
+      doc.holdStart = now;
+      poll();
+    }
+
+    // Pretend everyone left for a while: move the hold start into the past.
+    function skipAhead(seconds) {
+      if (doc.holder) doc.holdStart -= seconds * 1000;
+      poll();
+    }
+
+    function resetGame() {
+      doc = { holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
+      poll();
+    }
+
+    // ---- The poll ---------------------------------------------------------
+    // On the real page, Darryl's poll does this with fetch('/api/state').
+    function poll() {
+      Scoreboard.update(fakeApiState());
+    }
+    poll();
+    setInterval(poll, 2500);
+  </script>
+</body>
+</html>
