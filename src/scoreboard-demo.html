@@ -6,6 +6,7 @@
   <title>Scoreboard demo - Red vs Blue</title>
   <link rel="stylesheet" href="scoreboard.css">
   <style>
+    /* Demo page only. None of this goes into index.html. */
     body {
       margin: 0;
       padding: 1.5rem 1rem 3rem;
@@ -30,6 +31,7 @@
   <h1>Scoreboard demo</h1>
   <p class="demo-note">A fake server stands in for /api/state, so this works with no Azure and no teammates' code.</p>
 
+  <!-- ============ COPY FROM HERE into index.html ============ -->
   <section class="sb" id="scoreboard" aria-label="Scoreboard">
     <div class="sb-scores">
       <div class="sb-team sb-team--red">
@@ -46,45 +48,46 @@
     </div>
     <p class="sb-timer" id="sb-timer">Loading scores…</p>
   </section>
+  <!-- ============ COPY TO HERE ============ -->
 
   <div class="demo-controls">
-    <button type="button" onclick="press('RED')">Red takes the button</button>
-    <button type="button" onclick="press('BLUE')">Blue takes the button</button>
+    <button type="button" onclick="press('red')">Red takes the button</button>
+    <button type="button" onclick="press('blue')">Blue takes the button</button>
     <button type="button" onclick="skipAhead(3600)">Skip ahead 1 hour</button>
     <button type="button" onclick="resetGame()">Reset</button>
   </div>
 
   <script src="scoreboard.js"></script>
   <script>
+    // ---- Fake server (demo only) -----------------------------------------
+    // This is the state document Bryce will keep in Cosmos DB.
     let doc = { holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
 
-    function liveScore(team, now) {
-      const saved = team === 'RED' ? doc.redTotal : doc.blueTotal;
-      if (doc.holder !== team || doc.holdStart === null) return saved;
-      return saved + Math.max(0, (now - doc.holdStart) / 1000);
-    }
-
+    // What /api/state will send back. Same sum as stateResponse.js.
     function fakeApiState() {
       const now = Date.now();
+      const held = doc.holder ? (now - doc.holdStart) / 1000 : 0;
       return {
         holder: doc.holder,
         holdStart: doc.holdStart,
-        redScore: liveScore('RED', now),
-        blueScore: liveScore('BLUE', now),
-        serverNow: new Date(now).toISOString(),
+        redScore: doc.redTotal + (doc.holder === 'red' ? held : 0),
+        blueScore: doc.blueTotal + (doc.holder === 'blue' ? held : 0),
+        serverNow: now,
       };
     }
 
+    // What /api/press will do: save the old holder's time, then switch.
     function press(team) {
-      if (doc.holder === team) return;
+      if (doc.holder === team) return; // your team already holds it
       const now = Date.now();
-      if (doc.holder === 'RED') doc.redTotal += (now - doc.holdStart) / 1000;
-      if (doc.holder === 'BLUE') doc.blueTotal += (now - doc.holdStart) / 1000;
+      if (doc.holder === 'red') doc.redTotal += (now - doc.holdStart) / 1000;
+      if (doc.holder === 'blue') doc.blueTotal += (now - doc.holdStart) / 1000;
       doc.holder = team;
       doc.holdStart = now;
       poll();
     }
 
+    // Pretend everyone left for a while: move the hold start into the past.
     function skipAhead(seconds) {
       if (doc.holder) doc.holdStart -= seconds * 1000;
       poll();
@@ -95,6 +98,8 @@
       poll();
     }
 
+    // ---- The poll ---------------------------------------------------------
+    // On the real page, Darryl's poll does this with fetch('/api/state').
     function poll() {
       Scoreboard.update(fakeApiState());
     }
