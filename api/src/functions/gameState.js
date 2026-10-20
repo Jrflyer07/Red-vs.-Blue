@@ -25,9 +25,7 @@ app.http('gameState', {
 
       const updatedState = bankAndSwitchHolder(state, body.team);
 
-      const { resource } = await game
-        .item(updatedState.id, updatedState.partitionKey)
-        .replace(updatedState);
+      const { resource } = await game.items.upsert(updatedState);
 
       return { status: 200, jsonBody: buildStateResponse(resource) };
     }

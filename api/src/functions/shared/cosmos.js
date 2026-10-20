@@ -13,12 +13,13 @@ const game = database.container('game');
 
 // Helper to handle initial auto-creation on a fresh DB (TR-11)
 async function getOrCreateGameState(stateId = 'game-state-main') {
-  try {
-    const { resource } = await game.item(stateId, 'global').read();
-    if (resource) return resource;
-  } catch (error) {
-    if (error.statusCode !== 404) throw error;
-  }
+  const { resources } = await game.items
+    .query({
+      query: 'SELECT * FROM c WHERE c.id = @id',
+      parameters: [{ name: '@id', value: stateId }],
+    })
+    .fetchAll();
+  if (resources.length > 0) return resources[0];
 
   const defaultState = {
     id: stateId,
