@@ -120,7 +120,7 @@ app.http('gameState', {
 
         try {
           const { resource } = await game
-            .item(updatedState.id, updatedState.partitionKey)
+            .item(updatedState.id, updatedState.id)
             .replace(updatedState, {
               accessCondition: {
                 type: 'IfMatch',
