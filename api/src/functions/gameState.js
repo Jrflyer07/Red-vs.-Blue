@@ -1,6 +1,7 @@
 const { app } = require('@azure/functions');
-const { game, getOrCreateGameState } = require('./shared/cosmos');
+const { players, game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
+const { buildStateResponse } = require('./shared/stateResponse');
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -12,25 +13,151 @@ app.http('gameState', {
 
     // GET: Fetch current state
     if (request.method === 'GET') {
-      return { status: 200, jsonBody: state };
-    }
+    const responseState = {
+        ...state,
+        holder: state.holder
+            ? state.holder.toLowerCase()
+            : null
+    };
+
+    return {
+        status: 200,
+        jsonBody: buildStateResponse(responseState)
+    };
+}
 
     // POST: Handle button press & switch holders (TR-13)
+    
+    // POST: Capture the button
     if (request.method === 'POST') {
-      const body = await request.json();
-      if (!body || !body.team || !['RED', 'BLUE'].includes(body.team)) {
-        return { status: 400, body: "Invalid team. Must be 'RED' or 'BLUE'." };
+      let body;
+
+      try {
+        body = await request.json();
+      } catch {
+        return { status: 400, body: 'Invalid JSON.' };
       }
 
-      const updatedState = bankAndSwitchHolder(state, body.team);
+      const playerId = body?.playerId;
 
-      const { resource } = await game
-        .item(updatedState.id, updatedState.partitionKey)
-        .replace(updatedState);
+      if (typeof playerId !== 'string' || !playerId) {
+        return { status: 400, body: 'Missing player ID.' };
+      }
 
-      return { status: 200, jsonBody: resource };
-    }
+      // Find the player's actual assigned team.
+      let playerResult;
 
-    return { status: 405, body: 'Method Not Allowed' };
+      try {
+        playerResult = await players.item(playerId, playerId).read();
+      } catch (error) {
+        if (error.statusCode === 404 || Number(error.code) === 404) {
+          return { status: 401, body: 'Unknown player.' };
+        }
+        throw error;
+      }
+
+      const player = playerResult.resource;
+
+      if (!player || !['red', 'blue'].includes(player.team)) {
+        return { status: 401, body: 'Invalid player.' };
+      }
+
+      const team = player.team.toUpperCase();
+      let latestState = state;
+      let rateReserved = false;
+
+      // Retry if another player updates the game simultaneously.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const holder = latestState.holder
+          ? latestState.holder.toUpperCase()
+          : null;
+
+        // Can't capture if your team already holds the button.
+        if (holder === team) {
+          return { status: 409, body: 'Your team already holds it.' };
+        }
+
+        // Allow one press per second per player.
+        if (!rateReserved) {
+          const now = Date.now();
+          const lastPress = Number(player.lastPressAt || 0);
+
+          if (now - lastPress < 1000) {
+            return { status: 429, body: 'Please wait one second.' };
+          }
+
+          const playerEtag = player._etag || playerResult.etag;
+
+          if (!playerEtag) {
+            throw new Error('Player ETag missing.');
+          }
+
+          try {
+            await players.item(playerId, playerId).replace(
+              { ...player, lastPressAt: now },
+              {
+                accessCondition: {
+                  type: 'IfMatch',
+                  condition: playerEtag
+                }
+              }
+            );
+
+            rateReserved = true;
+
+          } catch (error) {
+            if (error.statusCode === 412 || Number(error.code) === 412) {
+              return { status: 429, body: 'Press already in progress.' };
+            }
+
+            throw error;
+          }
+        }
+
+        // Use Bryce's helper to bank time and change owners.
+        const updatedState = bankAndSwitchHolder(
+          { ...latestState, holder },
+          team,
+          Date.now()
+        );
+
+        if (!latestState._etag) {
+          throw new Error('Game-state ETag missing.');
+        }
+
+        try {
+          const { resource } = await game
+            .item(updatedState.id, updatedState.partitionKey)
+            .replace(updatedState, {
+              accessCondition: {
+                type: 'IfMatch',
+                condition: latestState._etag
+              }
+            });
+
+          return {
+            status: 200,
+            jsonBody: buildStateResponse({
+              ...resource,
+              holder: resource.holder.toLowerCase()
+            })
+          };
+
+        } catch (error) {
+          // Someone else captured before we saved.
+          if (error.statusCode === 412 || Number(error.code) === 412) {
+            latestState = await getOrCreateGameState();
+            continue;
+          }
+
+          throw error;
+        }
+      }
+
+      return {
+        status: 409,
+        body: 'Game changed too quickly. Try again.'
+      };
+    };
   },
 });
