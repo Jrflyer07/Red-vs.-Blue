@@ -13,18 +13,11 @@ app.http('gameState', {
 
     // GET: Fetch current state
     if (request.method === 'GET') {
-    const responseState = {
-        ...state,
-        holder: state.holder
-            ? state.holder.toLowerCase()
-            : null
-    };
-
-    return {
+      return {
         status: 200,
-        jsonBody: buildStateResponse(responseState)
-    };
-}
+        jsonBody: buildStateResponse(state)
+      };
+    }
 
     // POST: Handle button press & switch holders (TR-13)
     
@@ -137,10 +130,7 @@ app.http('gameState', {
 
           return {
             status: 200,
-            jsonBody: buildStateResponse({
-              ...resource,
-              holder: resource.holder.toLowerCase()
-            })
+            jsonBody: buildStateResponse(resource)
           };
 
         } catch (error) {
@@ -158,6 +148,7 @@ app.http('gameState', {
         status: 409,
         body: 'Game changed too quickly. Try again.'
       };
-    };
+    }
+    return { status: 405, body: 'Method Not Allowed' };
   },
 });
