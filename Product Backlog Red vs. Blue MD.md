@@ -64,3 +64,80 @@ Requirements are listed in the order we plan to implement them, and the numbers 
 - UR-17: As a player on my phone, I want the site to work well on a small screen.
 - UR-18: As a player, I want to see my personal stats (how many times I pressed, how long I held it for my team).
 - UR-19: As a player, I want the game to reset into rounds/seasons (ex. weekly) with a winner history.
+
+# Red vs Blue – Sprint 2 Backlog
+
+Sprint 2 focuses on expanding gameplay with multiple capturable flags, adding a minigame, improving the live player experience, and introducing player profiles, leaderboards, and sound effects.
+
+## Phase 1: Player Profiles
+
+- UR-20: As a player, I want to choose a username so other players can recognize me.
+- UR-21: As a returning player, I want my username to be remembered so I don't have to enter it every time.
+- TR-22: Associate each username with the player's existing unique ID.
+- TR-23: Store player usernames and IDs so they can be used in the leaderboard and recent activity feed.
+- TR-24: Allow players to set or update their username without creating a traditional login system.
+
+Assigned: Bryce , Will
+
+## Phase 2: Multiple Flags
+
+- UR-22: As a player, I want multiple flags to capture so my team has more opportunities to score.
+- UR-23: As a player, I want to see which team currently controls each flag.
+- TR-25: Add additional capturable buttons (flags) to the game interface.
+- TR-26: Track the current holder and capture state of each flag independently.
+- TR-27: Update the server logic to handle captures across multiple flags.
+
+Assigned: Darryl
+
+## Phase 3: Minigame
+
+- UR-24: As a player, I want to participate in a minigame for an opportunity to earn a win for my team.
+- UR-25: As a player, I want to see the result of the minigame so I know whether I won or lost.
+- TR-28: Implement the minigame interaction and determine the winner.
+- TR-29: Return the minigame result to the server for validation and recording.
+- TR-30: Send the winning player's username and result to the recent activity feed.
+
+Assigned: Darryl
+
+## Phase 4: Live Updates and Player Counts
+
+- UR-26: As a player, I want the game to respond quickly when I capture a flag.
+- UR-27: As a player, I want to see how many players are currently online on each team.
+- TR-31: Investigate and improve latency when processing captures and broadcasting state changes.
+- TR-32: Track and display the number of connected players on each team.
+- TR-33: Keep player counts synchronized as players connect and disconnect.
+
+Assigned: Will
+
+## Phase 5: Activity Feed and Leaderboard
+
+- UR-28: As a player, I want to see recent flag captures and minigame wins in an activity feed.
+- UR-29: As a player, I want to see a leaderboard showing player rankings and statistics.
+- UR-30: As a player, I want usernames displayed in the activity feed and leaderboard.
+- TR-34: Create an activity feed that displays recent flag captures and minigame wins.
+- TR-35: Create a leaderboard using player data and recorded game events.
+- TR-36: Connect the activity feed and leaderboard to the existing game state and player profiles.
+
+Assigned: Peyton
+
+## Phase 6: Sound and Music
+
+- UR-31: As a player, I want audio feedback when I capture a flag or complete a minigame.
+- UR-32: As a player, I want background music to make the game more engaging.
+- UR-33: As a player, I want to mute or adjust game audio.
+- TR-37: Implement sound effects for flag captures and minigame results.
+- TR-38: Add background music with playback controls.
+- TR-39: Ensure audio does not interfere with the game's responsiveness.
+
+Assigned: Bryce
+
+## Sprint 2 Responsibilities
+
+- **Darryl:** Develop the minigame interaction, determine and return winners, integrate results into the activity feed, and implement additional capturable flags.
+- **Will:** Investigate and resolve latency issues, implement online player counts, and assist with player profiles.
+- **Peyton:** Develop the activity feed and leaderboard, including displaying flag captures, minigame wins, usernames, and player statistics.
+- **Bryce:** Implement sound effects and background music, develop player profiles using the existing browser ID, and connect usernames to persistent player data.
+
+## Sprint 2 Goal
+
+Expand Red vs Blue beyond a single-button game by introducing multiple objectives, competitive minigames, player recognition, and improved live interaction while maintaining synchronized game state across connected players.
