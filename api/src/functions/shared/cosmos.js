@@ -25,6 +25,7 @@ async function getOrCreateGameState(stateId = 'game-state-main') {
     id: stateId,
     partitionKey: 'global',
     holder: null,
+    holderUsername: null,
     holdStart: null,
     redTotal: 0,
     blueTotal: 0,

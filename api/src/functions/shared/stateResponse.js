@@ -12,6 +12,7 @@ function buildStateResponse(state, now = Date.now()) {
   return {
     // The frontend and Peyton's scoreboard use lowercase.
     holder: holder ? holder.toLowerCase() : null,
+    holderUsername: state.holderUsername || null,
     holdStart: state.holdStart || null,
     redScore: getLiveScore('RED', normalizedState, now),
     blueScore: getLiveScore('BLUE', normalizedState, now),
