@@ -18,7 +18,7 @@ const CAPTURE_API_READY = true;
 
 // Update the button's appearance from game state.
 function updateDisplay() {
-    button.style.backgroundColor = currentTeam || 'gray';
+    button.dataset.holder = currentTeam || 'none';
     button.innerText = currentTeam
         ? currentTeam.toUpperCase()
         : 'CAPTURE';

@@ -8,27 +8,57 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
 #usernameInput, #usernameSubmit { font: inherit; padding: 0.4rem 0.75rem; }
 #usernameError { color: #c62828; }
 
+/* Silver base */
+.button-base {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(320px, 85vw);
+    aspect-ratio: 2.2 / 1;
+    margin: 3rem auto;
+    border-radius: 50%;
+    background: linear-gradient(#f5f6f8, #aeb2b8);
+    box-shadow:
+        0 14px 0 #85898f,                /* the base's front edge */
+        0 26px 22px rgba(0, 0, 0, 0.3);  /* shadow on the page */
+}
+
 /* Capture button */
 #captureButton {
-    display: block;
-    width: min(250px, 75vw);
-    aspect-ratio: 1;
-    margin: 2rem auto;
+    --depth: 30px;  /* how much of the side wall shows */
+    --cap: #8a8a8a;
+    --wall: #5c5c5c;
 
-    border-radius: 50%;
+    width: 68%;
+    aspect-ratio: 2.2 / 1;
     border: none;
-
-    background-color: gray;
+    border-radius: 50%;
+    background: var(--cap);
     color: white;
-
     font-size: 30px;
     font-weight: bold;
     cursor: pointer;
+
+    /* moving up by the wall height keeps the bottom edge in place */
+    transform: translateY(calc(var(--depth) * -1));
+    box-shadow:
+        0 var(--depth) 0 var(--wall),
+        0 calc(var(--depth) + 3px) 0 2px #6d7076,  /* socket in the base */
+        inset 0 4px 6px rgba(255, 255, 255, 0.35);
+    transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+
+#captureButton[data-holder="red"]  { --cap: #d32f2f; --wall: #8e1c1c; }
+#captureButton[data-holder="blue"] { --cap: #1976d2; --wall: #0f4c8a; }
+
+/* Pressed in */
+#captureButton:active,
+#captureButton:disabled {
+    --depth: 8px;
 }
 
 #captureButton:disabled {
     cursor: not-allowed;
-    opacity: 0.7;
 }
 
 #gameStatus {
