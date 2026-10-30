@@ -2,6 +2,7 @@ const { app } = require('@azure/functions');
 const { players, game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
 const { buildStateResponse } = require('./shared/stateResponse');
+const { isValidUsername } = require('./shared/username');
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -31,11 +32,14 @@ app.http('gameState', {
         return { status: 400, body: 'Invalid JSON.' };
       }
 
-      const playerId = body?.playerId;
+      const username = body?.username;
 
-      if (typeof playerId !== 'string' || !playerId) {
-        return { status: 400, body: 'Missing player ID.' };
+      if (!isValidUsername(username)) {
+        return { status: 400, body: 'Missing or invalid username.' };
       }
+
+      // The player's document id is their lowercase username.
+      const playerId = username.toLowerCase();
 
       // Find the player's actual assigned team.
       let playerResult;
