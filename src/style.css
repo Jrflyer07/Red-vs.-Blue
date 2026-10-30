@@ -3,6 +3,11 @@ body { font-family: system-ui, sans-serif; text-align: center; margin: 0; paddin
 body[data-team="red"] #team { background: #fde2e2; color: #c62828; }
 body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
 
+/* Username prompt */
+#usernameForm { margin-top: 1rem; }
+#usernameInput, #usernameSubmit { font: inherit; padding: 0.4rem 0.75rem; }
+#usernameError { color: #c62828; }
+
 /* Capture button */
 #captureButton {
     display: block;

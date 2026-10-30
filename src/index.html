@@ -12,7 +12,14 @@
 
 <body>
   <h1>Red vs Blue</h1>
-<p id="team">Joining...</p>
+<p id="team">Enter a username to play</p>
+
+<form id="usernameForm">
+  <label for="usernameInput">Username</label>
+  <input id="usernameInput" type="text" maxlength="20" autocomplete="off" required autofocus>
+  <button id="usernameSubmit" type="submit">Join</button>
+  <p id="usernameError"></p>
+</form>
 
 <main id="gameArea" hidden>
     <!-- Peyton's scoreboard -->

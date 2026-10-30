@@ -1,7 +1,13 @@
 
 const button = document.getElementById('captureButton');
 const gameStatus = document.getElementById('gameStatus');
+const usernameForm = document.getElementById('usernameForm');
+const usernameInput = document.getElementById('usernameInput');
+const usernameSubmit = document.getElementById('usernameSubmit');
+const usernameError = document.getElementById('usernameError');
 
+// Only kept in memory, so every visit or refresh asks for it again.
+let playerUsername = null;
 let playerTeam = null;
 let currentTeam = null;
 let stateLoaded = false;
@@ -66,16 +72,24 @@ async function pollState() {
 }
 
 // Will's existing join function, with a few additions.
-async function joinGame() {
+async function joinGame(username) {
     const teamText = document.getElementById('team');
-    const savedId = localStorage.getItem('playerId');
+
+    usernameError.innerText = '';
+    usernameSubmit.disabled = true;
 
     try {
         const response = await fetch('/api/join', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playerId: savedId })
+            body: JSON.stringify({ username: username })
         });
+
+        // The API explains what's wrong with the username.
+        if (response.status === 400) {
+            usernameError.innerText = await response.text();
+            return;
+        }
 
         if (!response.ok) {
             throw new Error('Could not join game');
@@ -83,7 +97,8 @@ async function joinGame() {
 
         const data = await response.json();
 
-        localStorage.setItem('playerId', data.playerId);
+        playerUsername = data.username;
+        usernameForm.hidden = true;
 
         playerTeam = data.team.toLowerCase();
         document.body.dataset.team = playerTeam;
@@ -100,11 +115,18 @@ async function joinGame() {
 
     } catch (error) {
         console.log(error);
-        teamText.innerText =
-            'Could not join the game. Try refreshing.';
+        usernameError.innerText =
+            'Could not join the game. Try again.';
+
+    } finally {
+        usernameSubmit.disabled = false;
     }
 }
 
+usernameForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    joinGame(usernameInput.value.trim());
+});
 
 button.addEventListener('click', async function() {
     if (button.disabled || pressPending) {
@@ -121,7 +143,7 @@ button.addEventListener('click', async function() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                playerId: localStorage.getItem('playerId')
+                username: playerUsername
             })
         });
 
@@ -151,5 +173,4 @@ button.addEventListener('click', async function() {
     }
 });
 
-joinGame();
 updateDisplay();
