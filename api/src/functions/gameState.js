@@ -112,11 +112,10 @@ app.http('gameState', {
         }
 
         // Use Bryce's helper to bank time and change owners.
-        const updatedState = bankAndSwitchHolder(
-          { ...latestState, holder },
-          team,
-          Date.now()
-        );
+        const updatedState = {
+          ...bankAndSwitchHolder({ ...latestState, holder }, team, Date.now()),
+          holderUsername: player.username
+        };
 
         if (!latestState._etag) {
           throw new Error('Game-state ETag missing.');

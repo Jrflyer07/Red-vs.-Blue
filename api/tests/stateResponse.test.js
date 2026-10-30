@@ -36,7 +36,21 @@ test('the response includes the server time for the page to sync against', () =>
   expect(result.serverNow).toBe('2026-10-05T12:00:00.000Z');
 });
 
-test('only the five fields the page needs are sent, not the whole database document', () => {
+test('the username of the player holding the button is included', () => {
+  const state = { holder: 'RED', holderUsername: 'Will_07', holdStart: NOON, redTotal: 0, blueTotal: 0 };
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.holderUsername).toBe('Will_07');
+});
+
+test('holderUsername is null when the saved game has no username yet', () => {
+  const state = { holder: 'RED', holdStart: NOON, redTotal: 0, blueTotal: 0 };
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.holderUsername).toBe(null);
+});
+
+test('only the six fields the page needs are sent, not the whole database document', () => {
   const state = {
     id: 'game-state-main',
     partitionKey: 'global',
@@ -48,5 +62,5 @@ test('only the five fields the page needs are sent, not the whole database docum
   };
   const result = buildStateResponse(state, NOON);
 
-  expect(Object.keys(result)).toEqual(['holder', 'holdStart', 'redScore', 'blueScore', 'serverNow']);
+  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow']);
 });

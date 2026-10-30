@@ -45,7 +45,9 @@
     const hasServerTime = Boolean(newState.serverNow);
 
     state = {
-      holder: newState.holder || null,
+      // The API sends lowercase team names, but this file uses uppercase.
+      holder: newState.holder ? newState.holder.toUpperCase() : null,
+      holderUsername: newState.holderUsername || null,
       holdStart: newState.holdStart || null,
       redScore: Number(newState.redScore) || 0,
       blueScore: Number(newState.blueScore) || 0,
@@ -76,8 +78,10 @@
     const timer = document.getElementById('sb-timer');
     if (state.holder) {
       board.dataset.holder = state.holder;
+      // Holds from before usernames were saved only have a team name.
+      const holderName = state.holderUsername || TEAM_NAMES[state.holder];
       timer.textContent =
-        TEAM_NAMES[state.holder] + ' has held it for ' +
+        holderName + ' has held the button for ' +
         formatDuration(heldSeconds(state, nowMs));
     } else {
       board.dataset.holder = 'NONE';
