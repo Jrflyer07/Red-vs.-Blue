@@ -1,3 +1,5 @@
+// UR-13: Scores count up live while a team holds the button.
+
 (function () {
   'use strict';
 
