@@ -62,5 +62,69 @@ test('only the six fields the page needs are sent, not the whole database docume
   };
   const result = buildStateResponse(state, NOON);
 
-  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow']);
+  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow', 'contest']);
+});
+
+
+test('no active contest returns null contest', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest).toBeNull();
+});
+
+test('contest status is visible without exposing moves', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0,
+    contest: {
+      id: 'contest-1',
+      defenderUsername: 'Alice',
+      challengerUsername: 'Bob',
+      defenderMove: 'rock',
+      challengerMove: null,
+      round: 1,
+      expiresAt: NOON + 20000
+    }
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest.status).toBe('active');
+  expect(result.contest.defenderSubmitted).toBe(true);
+  expect(result.contest.challengerSubmitted).toBe(false);
+
+  // Neither player's actual move should be public.
+  expect(result.contest).not.toHaveProperty('defenderMove');
+  expect(result.contest).not.toHaveProperty('challengerMove');
+});
+
+test('expired contest is marked expired', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0,
+    contest: {
+      id: 'contest-1',
+      defenderUsername: 'Alice',
+      challengerUsername: 'Bob',
+      defenderMove: null,
+      challengerMove: null,
+      round: 1,
+      expiresAt: NOON - 1000
+    }
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest.status).toBe('expired');
 });
