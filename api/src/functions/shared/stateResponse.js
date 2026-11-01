@@ -28,6 +28,19 @@ function buildStateResponse(state, now = Date.now()) {
       status: now >= contest.expiresAt ? 'expired' : 'active',
       defenderSubmitted: Boolean(contest.defenderMove),
       challengerSubmitted: Boolean(contest.challengerMove)
+    } : null,
+
+    // Last completed result can be shown in both browsers and later in the
+    // activity feed. Never include hidden moves or database metadata.
+    lastContest: state.lastContest ? {
+      id: state.lastContest.id,
+      flagId: state.lastContest.flagId,
+      winnerUsername: state.lastContest.winnerUsername,
+      loserUsername: state.lastContest.loserUsername,
+      winnerTeam: state.lastContest.winnerTeam,
+      round: state.lastContest.round,
+      endedAt: state.lastContest.endedAt,
+      reason: state.lastContest.reason || 'rps'
     } : null
   };
 }
