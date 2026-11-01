@@ -1,9 +1,20 @@
 const { app } = require('@azure/functions');
 const { players, game, getOrCreateGameState } = require('./shared/cosmos');
-const { bankAndSwitchHolder } = require('./shared/scoring');
+const { planCapture } = require('./shared/captureDecision');
+const { settleExpiredContest } = require('./shared/contestTimeout');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
 const { verifyPlayerSession } = require('./shared/playerSession');
+
+function captureDenial(decision) {
+  if (decision.reason === 'cooldown') {
+    return { status: 429, jsonBody: {
+      error: 'cooldown', retryAt: decision.retryAt
+    } };
+  }
+  return { status: 409, body: decision.reason === 'contest-active'
+    ? 'Flag is currently contested.' : 'Your team already holds it.' };
+}
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -13,17 +24,33 @@ app.http('gameState', {
     // Get or auto-create document on fresh DB (TR-11)
     const state = await getOrCreateGameState();
 
-    // GET: Fetch current state
+    // GET also finalizes expired contests so no absent player can lock the flag.
     if (request.method === 'GET') {
-      return {
-        status: 200,
-        jsonBody: buildStateResponse(state)
-      };
+      let latest = state;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const settlement = settleExpiredContest(latest, Date.now());
+        if (settlement.status !== 'forfeit') {
+          return { status: 200, jsonBody: buildStateResponse(latest) };
+        }
+        if (!latest._etag) throw new Error('Game-state ETag missing.');
+        try {
+          const { resource } = await game.item(latest.id, latest.id).replace(
+            settlement.state,
+            { accessCondition: { type: 'IfMatch', condition: latest._etag } }
+          );
+          return { status: 200, jsonBody: buildStateResponse(resource) };
+        } catch (error) {
+          if (error.statusCode === 412 || Number(error.code) === 412) {
+            latest = await getOrCreateGameState();
+            continue;
+          }
+          throw error;
+        }
+      }
+      return { status: 409, body: 'Game changed. Please refresh.' };
     }
 
-    // POST: Handle button press & switch holders (TR-13)
-    
-    // POST: Capture the button
+    // POST: Immediately capture an empty flag, or start an RPS contest
     if (request.method === 'POST') {
       let body;
 
@@ -66,23 +93,21 @@ app.http('gameState', {
         return { status: 401, body: 'Invalid player session.' };
       }
 
-      const team = player.team.toUpperCase();
       let latestState = state;
       let rateReserved = false;
 
       // Retry if another player updates the game simultaneously.
       for (let attempt = 0; attempt < 5; attempt++) {
-        const holder = latestState.holder
-          ? latestState.holder.toUpperCase()
-          : null;
+        const decision = planCapture(latestState, player, Date.now());
 
-        // Can't capture if your team already holds the button.
-        if (holder === team) {
-          return { status: 409, body: 'Your team already holds it.' };
+        // A rejected press normally needs no write. If an old contest has
+        // expired, save its settlement even when this player cannot capture.
+        if (decision.status === 'blocked' && !decision.changed) {
+          return captureDenial(decision);
         }
 
         // Allow one press per second per player.
-        if (!rateReserved) {
+        if (decision.status !== 'blocked' && !rateReserved) {
           const now = Date.now();
           const lastPress = Number(player.lastPressAt || 0);
 
@@ -118,29 +143,27 @@ app.http('gameState', {
           }
         }
 
-        // Use Bryce's helper to bank time and change owners.
-        const updatedState = {
-          ...bankAndSwitchHolder({ ...latestState, holder }, team, Date.now()),
-          holderUsername: player.username
-        };
-
         if (!latestState._etag) {
           throw new Error('Game-state ETag missing.');
         }
 
         try {
           const { resource } = await game
-            .item(updatedState.id, updatedState.id)
-            .replace(updatedState, {
+            .item(decision.state.id, decision.state.id)
+            .replace(decision.state, {
               accessCondition: {
                 type: 'IfMatch',
                 condition: latestState._etag
               }
             });
 
+          if (decision.status === 'blocked') return captureDenial(decision);
           return {
-            status: 200,
-            jsonBody: buildStateResponse(resource)
+            status: decision.status === 'contest-started' ? 202 : 200,
+            jsonBody: {
+              ...buildStateResponse(resource),
+              action: decision.status
+            }
           };
 
         } catch (error) {
