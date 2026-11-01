@@ -3,6 +3,7 @@ const { players, game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
+const { verifyPlayerSession } = require('./shared/playerSession');
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -57,6 +58,12 @@ app.http('gameState', {
 
       if (!player || !['red', 'blue'].includes(player.team)) {
         return { status: 401, body: 'Invalid player.' };
+      }
+
+      // A username is public. Require the browser's secret session token
+      // before changing scores, capturing a flag, or reserving rate limits.
+      if (!verifyPlayerSession(player, body?.sessionToken)) {
+        return { status: 401, body: 'Invalid player session.' };
       }
 
       const team = player.team.toUpperCase();

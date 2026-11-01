@@ -5,8 +5,35 @@ const usernameForm = document.getElementById('usernameForm');
 const usernameInput = document.getElementById('usernameInput');
 const usernameSubmit = document.getElementById('usernameSubmit');
 const usernameError = document.getElementById('usernameError');
+const SESSION_STORAGE_KEY = 'redvsblue.playerSession.v1';
 
-// Only kept in memory, so every visit or refresh asks for it again.
+function readSavedSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+        const saved = raw ? JSON.parse(raw) : null;
+        return typeof saved?.username === 'string' &&
+            typeof saved?.sessionToken === 'string' ? saved : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveSession(username, sessionToken) {
+    try {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ username, sessionToken }));
+    } catch {
+        // The session will work until refresh if browser storage is disabled.
+        console.warn('Browser storage unavailable; session cannot persist.');
+    }
+}
+
+function forgetSession() {
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch {}
+}
+
+// The secret token is stored locally and verified by the backend.
+let playerSessionToken = null;
+let pollingInterval = null;
 let playerUsername = null;
 let playerTeam = null;
 let currentTeam = null;
@@ -72,7 +99,7 @@ async function pollState() {
 }
 
 // Will's existing join function, with a few additions.
-async function joinGame(username) {
+async function joinGame(username, existingToken = null) {
     const teamText = document.getElementById('team');
 
     usernameError.innerText = '';
@@ -82,12 +109,16 @@ async function joinGame(username) {
         const response = await fetch('/api/join', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
+            body: JSON.stringify({
+                username,
+                ...(existingToken ? { sessionToken: existingToken } : {})
+            })
         });
 
-        // The API explains what's wrong with the username.
-        if (response.status === 400) {
+        // An existing username cannot be taken over without its token.
+        if ([400, 401, 409].includes(response.status)) {
             usernameError.innerText = await response.text();
+            if (existingToken) forgetSession();
             return;
         }
 
@@ -96,8 +127,13 @@ async function joinGame(username) {
         }
 
         const data = await response.json();
+        if (typeof data.sessionToken !== 'string') {
+            throw new Error('Join response missing session token');
+        }
 
         playerUsername = data.username;
+        playerSessionToken = data.sessionToken;
+        saveSession(data.username, data.sessionToken);
         usernameForm.hidden = true;
 
         playerTeam = data.team.toLowerCase();
@@ -111,7 +147,7 @@ async function joinGame(username) {
 
         // Start getting game updates every 2.5 seconds.
         await pollState();
-        setInterval(pollState, 2500);
+        if (!pollingInterval) pollingInterval = setInterval(pollState, 2500);
 
     } catch (error) {
         console.log(error);
@@ -125,7 +161,11 @@ async function joinGame(username) {
 
 usernameForm.addEventListener('submit', function(event) {
     event.preventDefault();
-    joinGame(usernameInput.value.trim());
+    const username = usernameInput.value.trim();
+    const saved = readSavedSession();
+    const token = saved && saved.username.toLowerCase() === username.toLowerCase()
+        ? saved.sessionToken : null;
+    joinGame(username, token);
 });
 
 button.addEventListener('click', async function() {
@@ -143,7 +183,8 @@ button.addEventListener('click', async function() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                username: playerUsername
+                username: playerUsername,
+                sessionToken: playerSessionToken
             })
         });
 
@@ -154,6 +195,15 @@ button.addEventListener('click', async function() {
             } else if (response.status === 429) {
                 gameStatus.innerText =
                     'Please wait before pressing again.';
+            } else if (response.status === 401) {
+                // Stop allowing actions with a missing or revoked session.
+                forgetSession();
+                playerUsername = null;
+                playerTeam = null;
+                playerSessionToken = null;
+                usernameForm.hidden = false;
+                document.getElementById('gameArea').hidden = true;
+                usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
             } else {
                 throw new Error('Capture failed');
             }
@@ -174,3 +224,10 @@ button.addEventListener('click', async function() {
 });
 
 updateDisplay();
+
+// Automatically resume the same player on this browser after a refresh.
+const savedSession = readSavedSession();
+if (savedSession) {
+    usernameInput.value = savedSession.username;
+    joinGame(savedSession.username, savedSession.sessionToken);
+}
