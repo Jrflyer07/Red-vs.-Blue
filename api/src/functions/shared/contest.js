@@ -16,6 +16,13 @@ function startContest(state, challenger, contestId, now = Date.now()) {
     return { started: false, reason: 'contest-active' };
   }
 
+  // A recent loser must wait before challenging again.
+  // Keys are normalized so Alice and alice share one cooldown.
+  const cooldownUntil = Number(state.cooldowns?.[challenger.username.toLowerCase()] || 0);
+  if (cooldownUntil > now) {
+    return { started: false, reason: 'cooldown', retryAt: cooldownUntil };
+  }
+
   const defenderTeam = state.holder?.toUpperCase();
 
   // No contest needed if there is no current defender.

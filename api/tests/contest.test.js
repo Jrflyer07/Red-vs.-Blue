@@ -80,3 +80,22 @@ test('invalid challenger is rejected', () => {
     'contest-1'
   )).toThrow('Invalid contest inputs');
 });
+
+
+test('loser cannot challenge during cooldown', () => {
+  const stateWithCooldown = {
+    ...state,
+    cooldowns: { bob: 35000 }
+  };
+  const result = startContest(stateWithCooldown, challenger, 'contest-2', 10000);
+  expect(result).toEqual({ started: false, reason: 'cooldown', retryAt: 35000 });
+});
+
+test('cooldown expires and the player can challenge again', () => {
+  const stateWithCooldown = {
+    ...state,
+    cooldowns: { bob: 35000 }
+  };
+  const result = startContest(stateWithCooldown, challenger, 'contest-2', 35000);
+  expect(result.started).toBe(true);
+});
