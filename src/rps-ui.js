@@ -5,6 +5,7 @@
 
     const MOVES = ['rock', 'paper', 'scissors'];
     const RESULT_VISIBLE_MS = 20000;
+    const DRAW_NOTICE_MS = 1500;
 
     function contestantRole(contest, username) {
         if (!contest || typeof username !== 'string') return null;
@@ -63,6 +64,15 @@
         let errorMessage = '';
         let renderedRound = '';
         let dismissedResultId = null;
+        let drawRoundId = null;
+        let drawUntil = 0;
+
+        // A round increase within the same contest means the server found a tie.
+        // The notification is only visual; the server's deadline keeps running.
+        function showingDraw(contest) {
+            return Boolean(contest && drawRoundId === `${contest.id}:${contest.round}` &&
+                Date.now() < drawUntil);
+        }
 
         function serverNow() { return Date.now() + clockOffset; }
 
@@ -73,10 +83,17 @@
         function renderClock() {
             const contest = activeContest();
             if (!contest || overlay.hidden) return;
+            // End the draw display even if no new server response arrives.
+            if (drawRoundId === `${contest.id}:${contest.round}` && Date.now() >= drawUntil) {
+                drawRoundId = null;
+                render();
+                return;
+            }
             const remaining = secondsLeft(Number(contest.expiresAt), serverNow());
             clock.textContent = `${remaining}s left`;
             const role = contestantRole(contest, getUsername());
-            const disabled = pending || !role || alreadyPlayed(contest, role) || remaining === 0;
+            const disabled = pending || !role || alreadyPlayed(contest, role) ||
+                showingDraw(contest) || remaining === 0;
             for (const button of buttons) button.disabled = disabled;
             if (remaining === 0) feedback.textContent = 'Time is up. Waiting for the server to settle the flag.';
         }
@@ -93,8 +110,16 @@
                     errorMessage = '';
                 }
                 overlay.hidden = false;
-                choices.hidden = false;
                 dismiss.hidden = true;
+                if (showingDraw(contest)) {
+                    choices.hidden = true;
+                    title.textContent = 'DRAW!';
+                    opponent.textContent = `Round ${contest.round - 1} ended in a tie.`;
+                    feedback.textContent = `Round ${contest.round} begins shortly. Get ready!`;
+                    renderClock();
+                    return;
+                }
+                choices.hidden = false;
                 title.textContent = `Rock • Paper • Scissors — Round ${contest.round}`;
                 opponent.textContent = role === 'defender'
                     ? `Defend your flag against ${contest.challengerUsername}`
@@ -127,6 +152,19 @@
         }
 
         function sync(nextState) {
+            const previous = state?.contest;
+            const next = nextState?.contest;
+            if (previous && next && next.id === previous.id &&
+                Number.isSafeInteger(previous.round) && Number.isSafeInteger(next.round) &&
+                next.round > previous.round) {
+                drawRoundId = `${next.id}:${next.round}`;
+                drawUntil = Date.now() + DRAW_NOTICE_MS;
+            } else if (!previous || !next || previous.id !== next.id ||
+                next.round < previous.round) {
+                // Never show an old draw when the contest has ended or changed.
+                drawRoundId = null;
+                drawUntil = 0;
+            }
             state = nextState;
             const serverTimestamp = Date.parse(nextState?.serverNow);
             if (Number.isFinite(serverTimestamp)) clockOffset = serverTimestamp - Date.now();
@@ -136,7 +174,7 @@
         async function choose(move) {
             const contest = activeContest();
             const role = contestantRole(contest, getUsername());
-            if (!MOVES.includes(move) || !role || pending ||
+            if (!MOVES.includes(move) || !role || pending || showingDraw(contest) ||
                 alreadyPlayed(contest, role) || secondsLeft(Number(contest.expiresAt), serverNow()) === 0) return;
 
             pending = true;

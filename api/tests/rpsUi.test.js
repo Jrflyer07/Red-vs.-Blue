@@ -122,6 +122,54 @@ describe('RPS popup behavior', () => {
     expect(nodes.rpsOverlay.hidden).toBe(true);
   });
 
+  test('a tied round briefly announces DRAW before round two can be played', async () => {
+    ui.sync(state());
+    ui.sync(state({ contest: { ...contest, round: 2 } }));
+
+    expect(nodes.rpsOverlay.hidden).toBe(false);
+    expect(nodes.rpsTitle.textContent).toBe('DRAW!');
+    expect(nodes.rpsOpponent.textContent).toMatch(/Round 1 ended in a tie/);
+    expect(nodes.rpsChoices.hidden).toBe(true);
+    expect(buttons.every(button => button.disabled)).toBe(true);
+
+    // Even a programmatic click must not submit during the announcement.
+    await buttons[0].handlers.click();
+    expect(onMove).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(1500);
+    expect(nodes.rpsTitle.textContent).toContain('Round 2');
+    expect(nodes.rpsChoices.hidden).toBe(false);
+    expect(buttons.every(button => !button.disabled)).toBe(true);
+  });
+
+  test('repeated polling of the same round does not restart the draw announcement', () => {
+    ui.sync(state());
+    ui.sync(state({ contest: { ...contest, round: 2 } }));
+    jest.advanceTimersByTime(1000);
+    ui.sync(state({ contest: { ...contest, round: 2 } }));
+    jest.advanceTimersByTime(500);
+    expect(nodes.rpsTitle.textContent).toContain('Round 2');
+    expect(nodes.rpsChoices.hidden).toBe(false);
+  });
+
+  test('joining a duel already in round two does not invent a draw', () => {
+    ui.sync(state({ contest: { ...contest, round: 2 } }));
+    expect(nodes.rpsTitle.textContent).toContain('Round 2');
+    expect(nodes.rpsChoices.hidden).toBe(false);
+  });
+
+  test('a finished contest immediately replaces an in-progress draw announcement', () => {
+    ui.sync(state());
+    ui.sync(state({ contest: { ...contest, round: 2 } }));
+    expect(nodes.rpsTitle.textContent).toBe('DRAW!');
+    ui.sync(state({ contest: null, lastContest: {
+      id: 'contest-1', winnerUsername: 'Alice', loserUsername: 'Bob',
+      endedAt: Date.now(), reason: 'rps'
+    } }));
+    expect(nodes.rpsTitle.textContent).toMatch(/won/i);
+    expect(nodes.rpsChoices.hidden).toBe(true);
+  });
+
   test('expired contests cannot take new moves', async () => {
     ui.sync(state({ contest: { ...contest, status: 'expired' } }));
     expect(nodes.rpsOverlay.hidden).toBe(true);
