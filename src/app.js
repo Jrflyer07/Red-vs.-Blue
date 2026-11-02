@@ -195,7 +195,7 @@ async function joinGame(username, existingToken = null) {
                 : "You're on Blue!";
                 document.getElementById('gameArea').hidden = false;
 
-        // Start getting game updates every 2.5 seconds.
+        // Start getting game updates second.
         await pollState();
         if (!pollingInterval) pollingInterval = setInterval(pollState, 1000);
 

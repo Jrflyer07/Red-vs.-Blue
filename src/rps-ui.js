@@ -23,9 +23,9 @@
     function contestMessage(contest, username) {
         if (!contest || contest.status !== 'active') return '';
         const role = contestantRole(contest, username);
-        if (!role) return `${contest.defenderUsername} and ${contest.challengerUsername} are contesting the flag.`;
+        if (!role) return `${contest.defenderUsername} and ${contest.challengerUsername} are contesting the button.`;
         return alreadyPlayed(contest, role) ? 'Move submitted. Waiting for the opponent.'
-            : 'Choose Rock, Paper, or Scissors to defend or capture the flag.';
+            : 'Choose Rock, Paper, or Scissors to defend or capture the button.';
     }
 
     function contestResult(result, username) {
@@ -36,8 +36,8 @@
         if (!won && !lost) return null;
         return {
             won,
-            title: won ? 'You won the flag!' : 'You lost the contest',
-            message: won ? 'Your team controls the flag. Nice play!'
+            title: won ? 'You won the button!' : 'You lost the contest',
+            message: won ? 'Your team controls the button. Nice play!'
                 : 'You have a 30-second cooldown before challenging again.',
             reason: result.reason === 'timeout' ? 'Decided by timeout.' : 'Decided by Rock, Paper, Scissors.'
         };
@@ -95,7 +95,7 @@
             const disabled = pending || !role || alreadyPlayed(contest, role) ||
                 showingDraw(contest) || remaining === 0;
             for (const button of buttons) button.disabled = disabled;
-            if (remaining === 0) feedback.textContent = 'Time is up. Waiting for the server to settle the flag.';
+            if (remaining === 0) feedback.textContent = 'Time is up. Waiting for the server to settle the button.';
         }
 
         function render() {
@@ -122,8 +122,8 @@
                 choices.hidden = false;
                 title.textContent = `Rock • Paper • Scissors — Round ${contest.round}`;
                 opponent.textContent = role === 'defender'
-                    ? `Defend your flag against ${contest.challengerUsername}`
-                    : `Challenge ${contest.defenderUsername} for the flag`;
+                    ? `Defend your button against ${contest.challengerUsername}`
+                    : `Challenge ${contest.defenderUsername} for the button`;
                 feedback.textContent = errorMessage || (pending ? 'Sending your move…'
                     : alreadyPlayed(contest, role) ? 'Move locked in. Waiting for the opponent.'
                         : 'Choose your move before the timer runs out.');
