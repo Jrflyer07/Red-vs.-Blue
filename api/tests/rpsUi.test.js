@@ -31,7 +31,7 @@ test('submitted status is specific to player role', () => {
 
 test('opponents and spectators receive an appropriate contest message', () => {
   expect(RpsUI.contestMessage(contest, 'Bob')).toMatch(/Choose Rock/i);
-  expect(RpsUI.contestMessage(contest, 'Eve')).toMatch(/contesting the flag/i);
+  expect(RpsUI.contestMessage(contest, 'Eve')).toMatch(/contesting the button/i);
   expect(RpsUI.contestMessage({ ...contest, status: 'expired' }, 'Bob')).toBe('');
 });
 
