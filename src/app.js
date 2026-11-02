@@ -39,6 +39,8 @@ let playerTeam = null;
 let currentTeam = null;
 let stateLoaded = false;
 let pressPending = false;
+let serverClockOffset = 0;
+let cooldownRetryAt = 0;
 
 // Leave disabled until the capture API is secured and tested.
 const CAPTURE_API_READY = true;
@@ -54,42 +56,89 @@ function updateDisplay() {
         !playerTeam ||
         !stateLoaded ||
         currentTeam === playerTeam ||
+        rpsUi.isContested() ||
+        Date.now() + serverClockOffset < cooldownRetryAt ||
         pressPending ||
         !CAPTURE_API_READY;
 }
+
+// The public state contains no secret RPS moves. We re-use it for both
+// scoreboard updates and the new duel popup.
+function applyState(state) {
+    if (state.redScore === undefined || state.blueScore === undefined || !state.serverNow) {
+        throw new Error('API score format is not ready');
+    }
+
+    const serverTimestamp = Date.parse(state.serverNow);
+    if (Number.isFinite(serverTimestamp)) serverClockOffset = serverTimestamp - Date.now();
+    currentTeam = state.holder ? state.holder.toLowerCase() : null;
+    stateLoaded = true;
+
+    Scoreboard.update({ ...state, holder: currentTeam });
+    rpsUi.sync(state);
+
+    if (state.lastContest && playerUsername &&
+        String(state.lastContest.loserUsername).toLowerCase() === playerUsername.toLowerCase()) {
+        cooldownRetryAt = Math.max(cooldownRetryAt, Number(state.lastContest.endedAt) + 30000);
+    }
+
+    gameStatus.innerText = rpsUi.notice();
+    updateDisplay();
+}
+
+function invalidateSession() {
+    forgetSession();
+    playerUsername = null;
+    playerTeam = null;
+    playerSessionToken = null;
+    usernameForm.hidden = false;
+    document.getElementById('gameArea').hidden = true;
+    usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
+    rpsUi.refresh();
+    updateDisplay();
+}
+
+async function submitRpsMove({ contestId, round, move }) {
+    const response = await fetch('/api/contest/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: playerUsername,
+            sessionToken: playerSessionToken,
+            contestId, round, move
+        })
+    });
+    const data = await response.json().catch(() => null);
+    if (response.status === 401) {
+        invalidateSession();
+        throw new Error('Your session is no longer valid.');
+    }
+    if (!response.ok) {
+        if (data?.serverNow) applyState(data); // e.g. timeout settlement
+        if (response.status === 409) {
+            // A duel may have ended or advanced while this request was in flight.
+            pollState();
+            throw new Error('This round changed. Checking the latest contest…');
+        }
+        throw new Error(response.status === 403
+            ? 'You are not a participant in this contest.'
+            : 'Move not accepted. Please try again.');
+    }
+    return data;
+}
+
+const rpsUi = window.RpsUI.create({
+    getUsername: () => playerUsername,
+    submitMove: submitRpsMove,
+    onState: applyState
+});
 
 // Read the current game state from Azure.
 async function pollState() {
     try {
         const response = await fetch('/api/state');
-
-        if (!response.ok) {
-            throw new Error('Could not load game state');
-        }
-
-        const state = await response.json();
-
-        // Scoreboard needs the calculated score response.
-        if (state.redScore === undefined ||
-            state.blueScore === undefined ||
-            !state.serverNow) {
-            throw new Error('API score format is not ready');
-        }
-
-        currentTeam = state.holder
-            ? state.holder.toLowerCase()
-            : null;
-
-        stateLoaded = true;
-
-        Scoreboard.update({
-            ...state,
-            holder: currentTeam
-        });
-
-        gameStatus.innerText = '';
-        updateDisplay();
-
+        if (!response.ok) throw new Error('Could not load game state');
+        applyState(await response.json());
     } catch (error) {
         console.log(error);
         stateLoaded = false;
@@ -133,6 +182,7 @@ async function joinGame(username, existingToken = null) {
 
         playerUsername = data.username;
         playerSessionToken = data.sessionToken;
+        cooldownRetryAt = 0;
         saveSession(data.username, data.sessionToken);
         usernameForm.hidden = true;
 
@@ -190,28 +240,23 @@ button.addEventListener('click', async function() {
 
         if (!response.ok) {
             if (response.status === 409) {
-                gameStatus.innerText =
-                    'Your team already holds the button, or the game changed.';
+                gameStatus.innerText = 'Flag is contested, already held by your team, or the game changed.';
+                await pollState();
             } else if (response.status === 429) {
-                gameStatus.innerText =
-                    'Please wait before pressing again.';
+                const data = await response.json().catch(() => null);
+                if (Number.isFinite(Number(data?.retryAt))) {
+                    cooldownRetryAt = Number(data.retryAt);
+                }
+                gameStatus.innerText = 'Please wait before pressing again.';
             } else if (response.status === 401) {
-                // Stop allowing actions with a missing or revoked session.
-                forgetSession();
-                playerUsername = null;
-                playerTeam = null;
-                playerSessionToken = null;
-                usernameForm.hidden = false;
-                document.getElementById('gameArea').hidden = true;
-                usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
+                invalidateSession();
             } else {
                 throw new Error('Capture failed');
             }
-
             return;
         }
 
-        await pollState();
+        applyState(await response.json());
 
     } catch (error) {
         console.log(error);

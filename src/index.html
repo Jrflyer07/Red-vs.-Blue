@@ -53,6 +53,24 @@
   <p id="gameStatus">Waiting for game state...</p>
 </main>
 
+  <!-- One active contest per flag; only the participants see the choices. -->
+  <div id="rpsOverlay" class="rps-overlay" hidden>
+    <section class="rps-card" role="dialog" aria-modal="true" aria-labelledby="rpsTitle">
+      <div class="rps-kicker">FLAG CONTEST</div>
+      <h2 id="rpsTitle">Rock • Paper • Scissors</h2>
+      <p id="rpsOpponent"></p>
+      <div class="rps-clock" id="rpsClock" aria-live="off"></div>
+      <p id="rpsFeedback" role="status" aria-live="polite"></p>
+      <div class="rps-choices" id="rpsChoices">
+        <button type="button" data-rps-move="rock"><span aria-hidden="true">✊</span>Rock</button>
+        <button type="button" data-rps-move="paper"><span aria-hidden="true">✋</span>Paper</button>
+        <button type="button" data-rps-move="scissors"><span aria-hidden="true">✌️</span>Scissors</button>
+      </div>
+      <button type="button" id="rpsDismiss" hidden>Back to game</button>
+    </section>
+  </div>
+
+  <script src="rps-ui.js"></script>
   <script src="scoreboard.js"></script>
   <script src="app.js"></script>
 </body>
