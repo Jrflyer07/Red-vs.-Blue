@@ -29,3 +29,12 @@ Run tests: cd api -> npm test
 
 
 UPD WITH MAIN
+
+
+reset
+
+PS C:\Users\lance\Downloads\403 proj\Red-vs.-Blue> Invoke-RestMethod -Method Post http://localhost:7071/admin/functions/weeklyReset -ContentType 'application/json' -Body '{}'
+
+
+Invoke-RestMethod -Method Post http://localhost:7071/admin/functions/weeklyReset -ContentType 'application/json' -Body '{}'S
+
