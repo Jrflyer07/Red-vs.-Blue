@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scoreboard demo - Red vs Blue</title>
+  <link rel="stylesheet" href="scoreboard.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 1.5rem 1rem 3rem;
+      font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+      color: #1c1f26;
+      background: #f6f7f9;
+    }
+    h1 { font-size: 1.25rem; text-align: center; margin: 0 0 0.25rem; }
+    .demo-note { text-align: center; margin: 0 auto; max-width: 32rem; color: #555b66; }
+    .demo-controls {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+      max-width: 32rem; margin: 2rem auto 0;
+    }
+    .demo-controls button {
+      font: inherit; font-weight: 600; padding: 0.6rem 0.9rem;
+      border: 2px solid #1c1f26; border-radius: 0.5rem; background: #fff; cursor: pointer;
+    }
+    .demo-controls button:focus-visible { outline: 3px solid #2f7bea; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <h1>Scoreboard demo</h1>
+  <p class="demo-note">A fake server stands in for /api/state, so this works with no Azure and no teammates' code.</p>
+
+  <section class="sb" id="scoreboard" aria-label="Scoreboard">
+    <div class="sb-scores">
+      <div class="sb-team sb-team--red">
+        <span class="sb-name">Red</span>
+        <span class="sb-score" id="sb-red-score">0</span>
+      </div>
+      <div class="sb-team sb-team--blue">
+        <span class="sb-name">Blue</span>
+        <span class="sb-score" id="sb-blue-score">0</span>
+      </div>
+    </div>
+    <div class="sb-bar" aria-hidden="true">
+      <div class="sb-bar-red" id="sb-bar-red"></div>
+    </div>
+    <p class="sb-timer" id="sb-timer">Loading scores…</p>
+  </section>
+
+  <div class="demo-controls">
+    <button type="button" onclick="press('RED')">Red takes the button</button>
+    <button type="button" onclick="press('BLUE')">Blue takes the button</button>
+    <button type="button" onclick="skipAhead(3600)">Skip ahead 1 hour</button>
+    <button type="button" onclick="resetGame()">Reset</button>
+  </div>
+
+  <script src="scoreboard.js"></script>
+  <script>
+    let doc = { holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
+
+    function liveScore(team, now) {
+      const saved = team === 'RED' ? doc.redTotal : doc.blueTotal;
+      if (doc.holder !== team || doc.holdStart === null) return saved;
+      return saved + Math.max(0, (now - doc.holdStart) / 1000);
+    }
+
+    function fakeApiState() {
+      const now = Date.now();
+      return {
+        holder: doc.holder,
+        holdStart: doc.holdStart,
+        redScore: liveScore('RED', now),
+        blueScore: liveScore('BLUE', now),
+        serverNow: new Date(now).toISOString(),
+      };
+    }
+
+    function press(team) {
+      if (doc.holder === team) return;
+      const now = Date.now();
+      if (doc.holder === 'RED') doc.redTotal += (now - doc.holdStart) / 1000;
+      if (doc.holder === 'BLUE') doc.blueTotal += (now - doc.holdStart) / 1000;
+      doc.holder = team;
+      doc.holdStart = now;
+      poll();
+    }
+
+    function skipAhead(seconds) {
+      if (doc.holder) doc.holdStart -= seconds * 1000;
+      poll();
+    }
+
+    function resetGame() {
+      doc = { holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
+      poll();
+    }
+
+    function poll() {
+      Scoreboard.update(fakeApiState());
+    }
+    poll();
+    setInterval(poll, 2500);
+  </script>
+</body>
+</html>
