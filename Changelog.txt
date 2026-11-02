@@ -26,3 +26,6 @@ Commands to run:
 I installed this : https://nodejs.org/en/download
 Run npm install -g azure-functions-core-tools@4 --unsafe-perm true
 Run tests: cd api -> npm test
+
+
+UPD WITH MAIN
