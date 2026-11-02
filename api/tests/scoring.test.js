@@ -1,4 +1,4 @@
-const { bankAndSwitchHolder, getLiveScore } = require('./shared/scoring');
+const { bankAndSwitchHolder, getLiveScore } = require('../src/functions/shared/scoring');
 
 describe('Scoring & Switch Math Unit Tests', () => {
   const initialState = {

@@ -1,6 +1,7 @@
 const { app } = require('@azure/functions');
 const { game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
+const { logPress } = require('./shared/pressLog');
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -23,10 +24,19 @@ app.http('gameState', {
       }
 
       const updatedState = bankAndSwitchHolder(state, body.team);
+      const switched = updatedState !== state;
 
       const { resource } = await game
         .item(updatedState.id, updatedState.partitionKey)
         .replace(updatedState);
+
+      if (switched) {
+        try {
+          await logPress({ playerId: body.playerId, team: body.team });
+        } catch (err) {
+          context.error('press log failed', err); // never fail the press over the feed
+        }
+      }
 
       return { status: 200, jsonBody: resource };
     }

@@ -34,3 +34,7 @@ async function getOrCreateGameState(stateId = 'game-state-main') {
 }
 
 module.exports = { players, game, getOrCreateGameState };
+
+const pressLog = database.container('pressLog');
+const history = database.container('history');
+module.exports = { players, game, pressLog, history, getOrCreateGameState };
