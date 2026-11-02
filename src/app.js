@@ -197,7 +197,7 @@ async function joinGame(username, existingToken = null) {
 
         // Start getting game updates every 2.5 seconds.
         await pollState();
-        if (!pollingInterval) pollingInterval = setInterval(pollState, 2500);
+        if (!pollingInterval) pollingInterval = setInterval(pollState, 1000);
 
     } catch (error) {
         console.log(error);
@@ -240,7 +240,7 @@ button.addEventListener('click', async function() {
 
         if (!response.ok) {
             if (response.status === 409) {
-                gameStatus.innerText = 'Flag is contested, already held by your team, or the game changed.';
+                gameStatus.innerText = 'Button is contested, already held by your team, or the game changed.';
                 await pollState();
             } else if (response.status === 429) {
                 const data = await response.json().catch(() => null);

@@ -13,7 +13,7 @@ function captureDenial(decision) {
     } };
   }
   return { status: 409, body: decision.reason === 'contest-active'
-    ? 'Flag is currently contested.' : 'Your team already holds it.' };
+    ? 'Button is currently contested.' : 'Your team already holds it.' };
 }
 
 app.http('gameState', {
