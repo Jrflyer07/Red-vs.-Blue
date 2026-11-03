@@ -1,23 +1,23 @@
 
 const RESET_TZ = 'America/Chicago';
 const resetFmt = new Intl.DateTimeFormat('en-US', {
-  timeZone: RESET_TZ, weekday: 'short', hour: 'numeric', hourCycle: 'h23',
+  timeZone: 'America/Chicago', hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
 });
 
-function isSunday7pmCentral(ms) {
+function is1159pmCentral(ms) {
   const parts = resetFmt.formatToParts(new Date(ms));
-  const get = (t) => parts.find((p) => p.type === t).value;
-  return get('weekday') === 'Sun' && Number(get('hour')) === 19;
+  const get = (t) => Number(parts.find((p) => p.type === t).value);
+  return get('hour') === 23 && get('minute') === 59;
 }
 
-// Next Sunday 7 PM Central: Monday 00:00 UTC (summer) or 01:00 UTC (winter)
+// Next 11:59 PM Central: 04:59 UTC (summer) or 05:59 UTC (winter)
 function nextResetMs(now = Date.now()) {
   const d = new Date(now);
   const base = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-  for (let day = 0; day <= 14; day++) {
-    for (const hour of [0, 1]) {
-      const t = base + day * 86400000 + hour * 3600000;
-      if (t > now && isSunday7pmCentral(t)) return t;
+  for (let day = 0; day <= 3; day++) {
+    for (const hour of [4, 5]) {
+      const t = base + day * 86400000 + hour * 3600000 + 59 * 60000;
+      if (t > now && is1159pmCentral(t)) return t;
     }
   }
   return null;
@@ -26,17 +26,17 @@ function nextResetMs(now = Date.now()) {
 function formatCountdown(ms) {
   const s = Math.max(0, Math.floor(ms / 1000));
   const pad = (n) => String(n).padStart(2, '0');
-  const days = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
+  const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
-  return `${days}d ${pad(h)}:${pad(m)}:${pad(s % 60)}`;
+  return `${pad(h)}:${pad(m)}:${pad(s % 60)}`;
 }
 
 let resetTarget = nextResetMs();
 setInterval(() => {
+  const el = document.getElementById('reset-countdown');
+  if (!el) return;
   if (Date.now() >= resetTarget) resetTarget = nextResetMs();
-  document.getElementById('reset-countdown').textContent =
-    'Scoreboard resets in ' + formatCountdown(resetTarget - Date.now());
+  el.textContent = 'Scoreboard resets in ' + formatCountdown(resetTarget - Date.now());
 }, 1000);
 
 // UR-13: Scores count up live while a team holds the button.

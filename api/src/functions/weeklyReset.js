@@ -3,14 +3,14 @@ const { resetWeek } = require('./shared/weekly');
 const { isResetTime } = require('./shared/schedule');
 
 app.timer('weeklyReset', {
-  // Monday 00:00 and 01:00 UTC. Exactly one of these is Sunday 7 PM Central, depending on DST.
-  schedule: '0 0 0,1 * * 1',
+  // Every day at 04:59 and 05:59 UTC. Exactly one of these is 11:59 PM Central, depending on DST.
+  schedule: '0 59 4,5 * * *',
   handler: async (timer, context) => {
     if (process.env.FORCE_WEEKLY_RESET !== 'true' && !isResetTime()) {
-      context.log('Not Sunday 7 PM Central, skipping reset');
+      context.log('Not 11:59 PM Central, skipping reset');
       return;
     }
     await resetWeek();
-    context.log('weekly reset complete');
+    context.log('daily reset complete');
   },
 });

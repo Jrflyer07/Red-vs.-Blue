@@ -5,6 +5,7 @@ function chicagoParts(ms) {
     timeZone: TZ,
     weekday: 'short',
     hour: 'numeric',
+    minute: 'numeric',
     hourCycle: 'h23',
     year: 'numeric',
     month: '2-digit',
@@ -14,14 +15,15 @@ function chicagoParts(ms) {
   return {
     weekday: get('weekday'),
     hour: Number(get('hour')),
+    minute: Number(get('minute')),
     date: `${get('year')}-${get('month')}-${get('day')}`,
   };
 }
 
-// True during the 7 PM hour on Sunday, Central time
+// True during the 11:59 PM minute, Central time, every day
 function isResetTime(now = Date.now()) {
-  const { weekday, hour } = chicagoParts(now);
-  return weekday === 'Sun' && hour === 19;
+  const { hour, minute } = chicagoParts(now);
+  return hour === 23 && minute === 59;
 }
 
 module.exports = { chicagoParts, isResetTime };

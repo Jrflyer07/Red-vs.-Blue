@@ -167,7 +167,7 @@ app.http('gameState', {
             try {
               await logPress({ playerId, team: heldNow });
             } catch (err) {
-              context.error('press log failed', err); // never fail the press over the feed
+              context.error?.('press log failed', err); // never fail the press over the feed
             }
           }
 

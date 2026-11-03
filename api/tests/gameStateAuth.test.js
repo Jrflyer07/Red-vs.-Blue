@@ -1,10 +1,14 @@
-jest.mock('@azure/functions', () => ({ app: { http: jest.fn() } }));
+jjest.mock('@azure/functions', () => ({ app: { http: jest.fn() } }));
 jest.mock('../src/functions/shared/cosmos', () => ({
   players: { item: jest.fn() },
   game: { item: jest.fn() },
   getOrCreateGameState: jest.fn()
 }));
+jest.mock('../src/functions/shared/pressLog', () => ({
+  logPress: jest.fn().mockResolvedValue(undefined)
+}));
 
+const { logPress } = require('../src/functions/shared/pressLog');
 const { app } = require('@azure/functions');
 const { players, game, getOrCreateGameState } = require('../src/functions/shared/cosmos');
 const { createPlayerSession } = require('../src/functions/shared/playerSession');
@@ -56,6 +60,8 @@ test('valid player token permits first capture and preserves username', async ()
   const updated = gameReplace.mock.calls[0][0];
   expect(updated.holder).toBe('RED');
   expect(updated.holderUsername).toBe('Alice');
+  expect(logPress).toHaveBeenCalledTimes(1);
+  expect(logPress).toHaveBeenCalledWith({ playerId: 'alice', team: 'RED' });
 });
 
 test('GET scoreboard remains public and requires no session', async () => {
@@ -76,6 +82,7 @@ test('opposing authenticated press starts a contest without transferring flag', 
   });
   const response = await handler(request({ username: 'Alice',
     sessionToken: session.sessionToken }), {});
+  expect(logPress).not.toHaveBeenCalled(); // starting a contest is not a capture
   expect(response.status).toBe(202);
   expect(response.jsonBody.action).toBe('contest-started');
   expect(response.jsonBody.holder).toBe('blue');

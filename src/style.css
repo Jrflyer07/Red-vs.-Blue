@@ -108,3 +108,37 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
 .rps-choices button:disabled { opacity: .5; cursor: not-allowed; }
 #rpsDismiss { margin-top: .8rem; padding: .7rem 1.5rem; }
 @media (max-width: 380px) { .rps-choices { gap: .25rem; } .rps-choices button { font-size: .85rem; } }
+
+.reset-info {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  text-align: left;
+  line-height: 1.3;
+}
+.reset-info p { margin: 0; }
+#reset-countdown {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.reset-note {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+/* mobile reset info */
+
+@media (max-width: 600px) {
+  .reset-info {
+    position: static;      /* back in the normal flow instead of pinned to the corner */
+    text-align: center;
+    margin: 4px 0 14px;
+  }
+  #reset-countdown {
+    font-size: 1.05rem;
+  }
+  .reset-note {
+    font-size: 0.75rem;
+  }
+}

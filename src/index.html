@@ -13,7 +13,6 @@
 <body>
   <h1>Red vs Blue</h1>
 <p id="team">Enter a username to play</p>
-<p id="reset-countdown"></p>
 
 <form id="usernameForm">
   <label for="usernameInput">Username</label>
@@ -23,6 +22,12 @@
 </form>
 
 <main id="gameArea" hidden>
+    <!-- Bryce's reset timer -->
+  <div class="reset-info">
+    <p id="reset-countdown"></p>
+    <p class="reset-note">Scoreboard daily reset at 11:59pm CST</p>
+  </div>
+
     <!-- Peyton's scoreboard -->
   <section class="sb" id="scoreboard" aria-label="Scoreboard">
     <div class="sb-scores">
