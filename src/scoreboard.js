@@ -39,6 +39,79 @@ setInterval(() => {
   el.textContent = 'Scoreboard resets in ' + formatCountdown(resetTarget - Date.now());
 }, 1000);
 
+(function () {
+  'use strict';
+
+  const REFRESH_MS = 5000;
+  let latestRequest = 0;
+
+  function element(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  function getBoard() {
+    let board = document.getElementById('leaderboard');
+    if (board) return board;
+
+    const anchor = document.getElementById('gameStatus') || document.getElementById('scoreboard');
+    if (!anchor) return null;
+
+    board = element('section', 'lb');
+    board.id = 'leaderboard';
+    board.setAttribute('aria-label', 'Rock paper scissors leaderboard');
+    board.hidden = true;
+    board.append(
+      element('h2', 'lb-title', 'Rock paper scissors leaders'),
+      element('ol', 'lb-list'),
+      element('p', 'lb-empty', 'No contests yet.')
+    );
+    anchor.after(board);
+    return board;
+  }
+
+  function renderLeaderboard(players) {
+    const board = getBoard();
+    if (!board) return;
+
+    const list = board.querySelector('.lb-list');
+    list.replaceChildren(...players.map((player) => {
+      const team = player.team === 'red' || player.team === 'blue' ? player.team : 'none';
+      const row = element('li', 'lb-row lb-row--' + team);
+      row.append(
+        element('span', 'lb-rank', String(player.rank)),
+        element('span', 'lb-name', String(player.username)),
+        element('span', 'lb-record', `${Number(player.wins) || 0}W ${Number(player.losses) || 0}L`)
+      );
+      return row;
+    }));
+
+    board.querySelector('.lb-empty').hidden = players.length > 0;
+    board.hidden = false;
+  }
+
+  async function refreshLeaderboard() {
+    if (!getBoard()) return;
+    const request = ++latestRequest;
+    try {
+      const response = await fetch('/api/leaderboard');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (request !== latestRequest) return;
+      renderLeaderboard(Array.isArray(data.players) ? data.players : []);
+    } catch (error) {
+      return;
+    }
+  }
+
+  refreshLeaderboard();
+  setInterval(refreshLeaderboard, REFRESH_MS);
+
+  window.Leaderboard = { refresh: refreshLeaderboard, render: renderLeaderboard };
+})();
+
 // UR-13: Scores count up live while a team holds the button.
 
 (function () {
@@ -135,4 +208,3 @@ setInterval(() => {
 
   window.Scoreboard = { update, liveScores, heldSeconds, formatDuration };
 })();
-

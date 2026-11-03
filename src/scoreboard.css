@@ -89,15 +89,75 @@
   color: var(--sb-blue);
 }
 
+.lb {
+  --lb-red: #e0314b;
+  --lb-blue: #2f7bea;
+
+  order: 4;
+  width: 100%;
+  max-width: 32rem;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.lb-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.lb-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-top: 1px solid rgba(127, 127, 127, 0.25);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-row:first-child {
+  border-top: none;
+}
+
+.lb-rank {
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.lb-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lb-row--red .lb-name {
+  color: var(--lb-red);
+}
+
+.lb-row--blue .lb-name {
+  color: var(--lb-blue);
+}
+
+.lb-record {
+  font-weight: 600;
+}
+
+.lb-empty {
+  margin: 0;
+  opacity: 0.7;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sb-team,
   .sb-bar-red {
     transition: none;
   }
-}
-
-
-/* Tighten spacing between team badge and scoreboard */
-#team {
-    margin-bottom: 16px;
 }
