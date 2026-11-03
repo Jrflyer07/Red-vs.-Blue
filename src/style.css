@@ -65,3 +65,46 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
     text-align: center;
     color: #777;
 }
+
+/* Contest window. Keep the existing button and scoreboard visible behind it. */
+.rps-overlay[hidden], .rps-choices[hidden], #rpsDismiss[hidden] { display: none; }
+.rps-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(16, 24, 40, 0.74);
+}
+.rps-card {
+    box-sizing: border-box;
+    width: min(100%, 30rem);
+    padding: clamp(1.3rem, 4vw, 2rem);
+    border-radius: 1.25rem;
+    background: #fff;
+    color: #182234;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, .35);
+}
+.rps-kicker { font-size: .8rem; font-weight: 800; letter-spacing: .14em; color: #64748b; }
+.rps-card h2 { font-size: clamp(1.35rem, 4vw, 1.75rem); margin: .8rem 0; }
+#rpsOpponent { margin: 0 0 1rem; color: #475569; }
+.rps-clock { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#rpsFeedback { min-height: 2.5em; line-height: 1.35; color: #475569; }
+.rps-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.rps-choices button, #rpsDismiss {
+    font: inherit;
+    font-weight: 700;
+    background: #f1f5f9;
+    border: 2px solid #cbd5e1;
+    color: #182234;
+    border-radius: .8rem;
+    padding: .8rem .3rem;
+    cursor: pointer;
+}
+.rps-choices button span { display: block; font-size: 2.1rem; margin-bottom: .35rem; }
+.rps-choices button:hover:not(:disabled), #rpsDismiss:hover { background: #e2e8f0; border-color: #64748b; }
+.rps-choices button:focus-visible, #rpsDismiss:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.rps-choices button:disabled { opacity: .5; cursor: not-allowed; }
+#rpsDismiss { margin-top: .8rem; padding: .7rem 1.5rem; }
+@media (max-width: 380px) { .rps-choices { gap: .25rem; } .rps-choices button { font-size: .85rem; } }

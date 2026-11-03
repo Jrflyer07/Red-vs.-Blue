@@ -50,7 +50,7 @@ test('holderUsername is null when the saved game has no username yet', () => {
   expect(result.holderUsername).toBe(null);
 });
 
-test('only the six fields the page needs are sent, not the whole database document', () => {
+test('only public fields are returned, not the whole database document', () => {
   const state = {
     id: 'game-state-main',
     partitionKey: 'global',
@@ -62,5 +62,97 @@ test('only the six fields the page needs are sent, not the whole database docume
   };
   const result = buildStateResponse(state, NOON);
 
-  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow']);
+  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow', 'contest', 'lastContest']);
+});
+
+
+test('no active contest returns null contest', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest).toBeNull();
+});
+
+test('contest status is visible without exposing moves', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0,
+    contest: {
+      id: 'contest-1',
+      defenderUsername: 'Alice',
+      challengerUsername: 'Bob',
+      defenderMove: 'rock',
+      challengerMove: null,
+      round: 1,
+      expiresAt: NOON + 20000
+    }
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest.status).toBe('active');
+  expect(result.contest.defenderSubmitted).toBe(true);
+  expect(result.contest.challengerSubmitted).toBe(false);
+
+  // Neither player's actual move should be public.
+  expect(result.contest).not.toHaveProperty('defenderMove');
+  expect(result.contest).not.toHaveProperty('challengerMove');
+});
+
+test('expired contest is marked expired', () => {
+  const state = {
+    holder: 'RED',
+    holdStart: NOON,
+    redTotal: 0,
+    blueTotal: 0,
+    contest: {
+      id: 'contest-1',
+      defenderUsername: 'Alice',
+      challengerUsername: 'Bob',
+      defenderMove: null,
+      challengerMove: null,
+      round: 1,
+      expiresAt: NOON - 1000
+    }
+  };
+
+  const result = buildStateResponse(state, NOON);
+
+  expect(result.contest.status).toBe('expired');
+});
+
+
+test('last contest result is public without leaking secret moves', () => {
+  const state = {
+    holder: 'BLUE', holdStart: NOON, redTotal: 0, blueTotal: 0,
+    lastContest: {
+      id: 'contest-1', flagId: 'game-state-main',
+      winnerUsername: 'Bob', loserUsername: 'Alice', winnerTeam: 'BLUE',
+      round: 1, endedAt: NOON, defenderMove: 'rock', challengerMove: 'paper',
+      _etag: 'secret-etag'
+    }
+  };
+  const result = buildStateResponse(state, NOON);
+  expect(result.lastContest).toEqual({
+    id: 'contest-1', flagId: 'game-state-main',
+    winnerUsername: 'Bob', loserUsername: 'Alice', winnerTeam: 'BLUE',
+    round: 1, endedAt: NOON, reason: 'rps'
+  });
+  expect(result.lastContest).not.toHaveProperty('defenderMove');
+  expect(result.lastContest).not.toHaveProperty('challengerMove');
+  expect(result.lastContest).not.toHaveProperty('_etag');
+});
+
+test('no previous contest gives a null result', () => {
+  const result = buildStateResponse({ holder: null, holdStart: null,
+    redTotal: 0, blueTotal: 0 }, NOON);
+  expect(result.lastContest).toBeNull();
 });
