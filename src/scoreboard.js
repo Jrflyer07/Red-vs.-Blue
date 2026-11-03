@@ -135,3 +135,4 @@ setInterval(() => {
 
   window.Scoreboard = { update, liveScores, heldSeconds, formatDuration };
 })();
+

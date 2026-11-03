@@ -17,8 +17,6 @@ function buildStateResponse(state, now = Date.now()) {
     blueScore: getLiveScore('BLUE', normalizedState, now),
     serverNow: new Date(now).toISOString(),
 
-    // Public contest information only.
-    // Never expose the players' actual RPS choices.
     contest: contest ? {
       id: contest.id,
       defenderUsername: contest.defenderUsername,
@@ -30,8 +28,6 @@ function buildStateResponse(state, now = Date.now()) {
       challengerSubmitted: Boolean(contest.challengerMove)
     } : null,
 
-    // Last completed result can be shown in both browsers and later in the
-    // activity feed. Never include hidden moves or database metadata.
     lastContest: state.lastContest ? {
       id: state.lastContest.id,
       flagId: state.lastContest.flagId,
@@ -41,7 +37,20 @@ function buildStateResponse(state, now = Date.now()) {
       round: state.lastContest.round,
       endedAt: state.lastContest.endedAt,
       reason: state.lastContest.reason || 'rps'
-    } : null
+    } : null,
+
+    // Public kill feed. Never expose the players' RPS choices.
+    killFeed: (Array.isArray(state.killFeed) ? state.killFeed : [])
+      .slice(0, 10)
+      .map(entry => ({
+        id: entry.id,
+        flagId: entry.flagId,
+        winnerUsername: entry.winnerUsername,
+        loserUsername: entry.loserUsername,
+        winnerTeam: entry.winnerTeam,
+        endedAt: entry.endedAt,
+        reason: entry.reason || 'rps'
+      }))
   };
 }
 

@@ -22,11 +22,23 @@
 </form>
 
 <main id="gameArea" hidden>
+
+
+  <aside id="kill-feed" class="kill-feed-panel">
+    <h2>Kill Feed</h2>
+    <ul id="kill-feed-list">
+      <li class="kill-feed-empty">No contests completed yet.</li>
+    </ul>
+  </aside>
+
+
     <!-- Bryce's reset timer -->
   <div class="reset-info">
     <p id="reset-countdown"></p>
     <p class="reset-note">Scoreboard daily reset at 11:59pm CST</p>
   </div>
+
+    
 
     <!-- Peyton's scoreboard -->
   <section class="sb" id="scoreboard" aria-label="Scoreboard">
@@ -78,6 +90,7 @@
 
   <script src="rps-ui.js"></script>
   <script src="scoreboard.js"></script>
+  <script src="kill-feed.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

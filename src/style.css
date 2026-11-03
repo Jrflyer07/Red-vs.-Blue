@@ -142,3 +142,138 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
     font-size: 0.75rem;
   }
 }
+
+
+
+
+/* Kill feed: left side, transparent, doesn't push other content */
+.kill-feed-panel {
+    position: absolute;
+    top: 210px;
+    left: 24px;
+    width: 320px;
+    max-width: calc(100% - 48px);
+    padding: 0;
+    margin: 0;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none !important;
+    color: inherit;
+}
+
+.kill-feed-panel h2 {
+    text-align: center;
+}
+
+/* Kill feed list */
+#kill-feed-list {
+    width: 100%;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+#kill-feed-list li {
+    list-style: none !important;
+}
+
+/* Individual entries */
+#kill-feed-list .kill-feed-entry {
+    text-align: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+/* Player team colors - matching JavaScript class names */
+#kill-feed-list .kill-feed-red {
+    color: #c62828 !important;
+    font-weight: bold;
+}
+
+#kill-feed-list .kill-feed-blue {
+    color: #1565c0 !important;
+    font-weight: bold;
+}
+
+/* Timestamp on its own line */
+#kill-feed-list .kill-feed-time {
+    display: block !important;
+    width: 100%;
+    margin-top: 6px;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+
+
+/* Mobile layout: scoreboard and button first, kill feed last */
+@media (max-width: 600px) {
+
+    #gameArea:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Reset countdown */
+    .reset-info {
+        position: static !important;
+        order: 1;
+        text-align: center;
+    }
+
+    /* Scoreboard */
+    #scoreboard {
+        order: 2;
+    }
+
+    /* Capture button */
+    .button-base {
+        order: 3;
+    }
+
+    /* Game status */
+    #gameStatus {
+        order: 4;
+    }
+
+    /* Kill feed goes BELOW the button */
+    .kill-feed-panel {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+
+        order: 5;
+        width: calc(100% - 32px) !important;
+        max-width: 400px;
+        margin: 30px auto 40px !important;
+        padding: 0 !important;
+
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .kill-feed-panel h2 {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    #kill-feed-list {
+        width: 100%;
+    }
+
+    #kill-feed-list .kill-feed-entry {
+        text-align: center;
+        padding: 12px 4px;
+        overflow-wrap: anywhere;
+    }
+
+    #kill-feed-list .kill-feed-time {
+        display: block !important;
+        margin-top: 6px;
+    }
+}
+

@@ -75,6 +75,11 @@ function applyState(state) {
     stateLoaded = true;
 
     Scoreboard.update({ ...state, holder: currentTeam });
+
+    if (window.KillFeed) {
+        window.KillFeed.update(state.killFeed || []);
+    }
+
     rpsUi.sync(state);
 
     if (state.lastContest && playerUsername &&

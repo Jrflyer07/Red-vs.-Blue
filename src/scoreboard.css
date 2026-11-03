@@ -95,3 +95,9 @@
     transition: none;
   }
 }
+
+
+/* Tighten spacing between team badge and scoreboard */
+#team {
+    margin-bottom: 16px;
+}
