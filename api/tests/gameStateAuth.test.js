@@ -1,4 +1,4 @@
-jjest.mock('@azure/functions', () => ({ app: { http: jest.fn() } }));
+jest.mock('@azure/functions', () => ({ app: { http: jest.fn() } }));
 jest.mock('../src/functions/shared/cosmos', () => ({
   players: { item: jest.fn() },
   game: { item: jest.fn() },

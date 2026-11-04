@@ -62,7 +62,7 @@ test('only public fields are returned, not the whole database document', () => {
   };
   const result = buildStateResponse(state, NOON);
 
-  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow', 'contest', 'lastContest']);
+  expect(Object.keys(result)).toEqual(['holder', 'holderUsername', 'holdStart', 'redScore', 'blueScore', 'serverNow', 'contest', 'lastContest', 'killFeed']);
 });
 
 

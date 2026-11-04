@@ -26,4 +26,12 @@ function isResetTime(now = Date.now()) {
   return hour === 23 && minute === 59;
 }
 
-module.exports = { chicagoParts, isResetTime };
+// state.weekId is the date the current period ends on (set by each reset).
+function isResetDue(state, now = Date.now()) {
+  const { date, hour, minute } = chicagoParts(now);
+  const period = state && state.weekId;
+  if (!period) return hour === 23 && minute >= 59;
+  return date > period || (date === period && hour === 23 && minute >= 59);
+}
+
+module.exports = { chicagoParts, isResetTime, isResetDue };

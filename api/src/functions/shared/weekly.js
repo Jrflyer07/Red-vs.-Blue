@@ -2,26 +2,31 @@ const { game, history, getOrCreateGameState } = require('./cosmos');
 const { getLiveScore } = require('./scoring');
 const { chicagoParts } = require('./schedule');
 
-async function resetWeek(now = Date.now()) {
+async function resetWeek(now = Date.now(), { endedDay } = {}) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const state = await getOrCreateGameState();
     const red = getLiveScore('RED', state, now);
     const blue = getLiveScore('BLUE', state, now);
-    const endedDay = chicagoParts(now).date;                // the day that is ending, e.g. "2026-11-03"
-    const nextDay = chicagoParts(now + 5 * 60 * 1000).date; // the day starting right after, e.g. "2026-11-04"
+    // The period being closed: an explicit day, else the day stored on the state, else a guess from the clock
+    const day = endedDay || state.weekId || chicagoParts(now - 2 * 3600 * 1000).date;
+    const nextDay = chicagoParts(now + 5 * 60 * 1000).date; // the day the new period ends on
 
-    // Archive first. Upsert with a fixed id makes retries and double-fires safe.
-    await history.items.upsert({
-      id: endedDay,
-      partitionKey: 'global',
-      weekId: endedDay,
-      endedAt: new Date(now).toISOString(),
-      redTotal: red,
-      blueTotal: blue,
-      winner: red === blue ? 'TIE' : red > blue ? 'RED' : 'BLUE',
-    });
+    // Archive once per day. If it already exists, keep the original totals.
+    try {
+      await history.items.create({
+        id: day,
+        partitionKey: 'global',
+        weekId: day,
+        endedAt: new Date(now).toISOString(),
+        redTotal: red,
+        blueTotal: blue,
+        winner: red === blue ? 'TIE' : red > blue ? 'RED' : 'BLUE',
+      });
+    } catch (err) {
+      if (err.code !== 409 && err.statusCode !== 409) throw err;
+    }
 
-    // Reset. Nobody holds the button after a reset, so the next press is a plain capture.
+    // Reset. Nobody holds the button afterward.
     const fresh = {
       ...state,
       redTotal: 0,
@@ -29,7 +34,7 @@ async function resetWeek(now = Date.now()) {
       holder: null,
       holderUsername: null,
       holdStart: null,
-      contest: null, // drop any rock-paper-scissors duel that was in progress
+      contest: null,
       weekId: nextDay,
     };
     try {
