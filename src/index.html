@@ -22,6 +22,24 @@
 </form>
 
 <main id="gameArea" hidden>
+
+
+  <aside id="kill-feed" class="kill-feed-panel">
+    <h2>Kill Feed</h2>
+    <ul id="kill-feed-list">
+      <li class="kill-feed-empty">No contests completed yet.</li>
+    </ul>
+  </aside>
+
+
+    <!-- Bryce's reset timer -->
+  <div class="reset-info">
+    <p id="reset-countdown"></p>
+    <p class="reset-note">Scoreboard daily reset at 11:59pm CST</p>
+  </div>
+
+    
+
     <!-- Peyton's scoreboard -->
   <section class="sb" id="scoreboard" aria-label="Scoreboard">
     <div class="sb-scores">
@@ -41,6 +59,13 @@
     </div>
 
     <p class="sb-timer" id="sb-timer">Loading scores...</p>
+  </section>
+
+
+  <!-- daily champions -->
+  <section class="champions" id="champions" aria-label="Daily Champion Scoreboard">
+    <h2>Daily Champions</h2>
+    <ol id="champions-list"><li class="champ-empty">Loading...</li></ol>
   </section>
 
   <!-- Capture button -->
@@ -78,7 +103,29 @@
   </section>
 </main>
 
+  <!-- One active contest per flag; only the participants see the choices. -->
+  <div id="rpsOverlay" class="rps-overlay" hidden>
+    <section class="rps-card" role="dialog" aria-modal="true" aria-labelledby="rpsTitle">
+      <div class="rps-kicker">BUTTON CONTEST</div>
+      <h2 id="rpsTitle">Rock • Paper • Scissors</h2>
+      <p id="rpsOpponent"></p>
+      <div class="rps-clock" id="rpsClock" aria-live="off"></div>
+      <p id="rpsFeedback" role="status" aria-live="polite"></p>
+      <div class="rps-choices" id="rpsChoices">
+        <button type="button" data-rps-move="rock"><span aria-hidden="true">✊</span>Rock</button>
+        <button type="button" data-rps-move="paper"><span aria-hidden="true">✋</span>Paper</button>
+        <button type="button" data-rps-move="scissors"><span aria-hidden="true">✌️</span>Scissors</button>
+      </div>
+      <button type="button" id="rpsDismiss" hidden>Back to game</button>
+    </section>
+  </div>
+
+  <script src="rps-ui.js"></script>
+  <script src="rps-spectator.js"></script>
   <script src="scoreboard.js"></script>
+  <script src="kill-feed.js"></script>
+  <script src="audio.js"></script>
+  <script src="champions.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

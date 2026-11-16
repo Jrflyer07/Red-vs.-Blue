@@ -1,7 +1,8 @@
 const { app } = require('@azure/functions');
-const { game, getOrCreateGameState } = require('./shared/cosmos');
+const { players, game, getOrCreateGameState } = require('./shared/cosmos');
+const { verifyPlayerSession } = require('./shared/playerSession');
 const { buildStateResponse } = require('./shared/stateResponse');
-const { creditHoldTime } = require('./shared/holdCredit');
+const { recordOwnershipChange } = require('./shared/holdCredit');
 const { isDeveloper, resetState, kickState } = require('./shared/devTools');
 
 app.http('dev', {
@@ -17,10 +18,26 @@ app.http('dev', {
       return { status: 400, body: 'Invalid JSON.' };
     }
 
-    const { username, key, action } = body || {};
+    const { username, sessionToken, key, action } = body || {};
 
     if (!isDeveloper(username, key, process.env.DEV_KEY)) {
       return { status: 403, body: 'Not allowed.' };
+    }
+
+    const playerId = username.toLowerCase();
+    let player;
+
+    try {
+      const result = await players.item(playerId, playerId).read();
+      player = result.resource;
+    } catch (error) {
+      if (error.statusCode !== 404 && Number(error.code) !== 404) {
+        throw error;
+      }
+    }
+
+    if (!player || !verifyPlayerSession(player, sessionToken)) {
+      return { status: 401, body: 'Invalid player session.' };
     }
 
     if (action !== 'reset' && action !== 'kick') {
@@ -47,7 +64,7 @@ app.http('dev', {
           });
 
         if (action === 'kick') {
-          await creditHoldTime(latestState, now, context);
+          await recordOwnershipChange(latestState, resource, now, context);
         }
 
         context.log('Dev action: ' + action);

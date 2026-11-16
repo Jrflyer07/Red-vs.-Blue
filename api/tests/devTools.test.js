@@ -39,8 +39,23 @@ test('reset clears scores and the holder but keeps the document id', () => {
     holderUsername: null,
     holdStart: null,
     redTotal: 0,
-    blueTotal: 0
+    blueTotal: 0,
+    contest: null,
+    cooldowns: {}
   });
+});
+
+test('kicking the holder also ends any contest on the button', () => {
+  const state = {
+    holder: 'RED',
+    holderUsername: 'Will',
+    holdStart: NOON - 10 * SECOND,
+    redTotal: 0,
+    blueTotal: 0,
+    contest: { id: 'c1' }
+  };
+
+  expect(kickState(state, NOON).contest).toBe(null);
 });
 
 test('kicking the holder banks their team time and empties the button', () => {

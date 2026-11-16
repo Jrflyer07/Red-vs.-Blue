@@ -28,4 +28,25 @@ function buildPlayerStats(player, state, now = Date.now()) {
   };
 }
 
-module.exports = { holdSecondsAt, buildPlayerStats };
+function holderKey(state) {
+  return state && state.holder && state.holderUsername
+    ? state.holderUsername.toLowerCase()
+    : null;
+}
+
+function ownershipChange(before, after, endTime) {
+  const previousId = holderKey(before);
+  const nextId = holderKey(after);
+
+  if (previousId === nextId) {
+    return null;
+  }
+
+  return {
+    previousId,
+    heldSeconds: previousId ? holdSecondsAt(before.holdStart, endTime) : 0,
+    nextId
+  };
+}
+
+module.exports = { holdSecondsAt, buildPlayerStats, ownershipChange };

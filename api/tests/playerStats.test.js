@@ -1,4 +1,4 @@
-const { holdSecondsAt, buildPlayerStats } = require('../src/functions/shared/playerStats');
+const { holdSecondsAt, buildPlayerStats, ownershipChange } = require('../src/functions/shared/playerStats');
 
 const NOON = Date.parse('2026-10-05T12:00:00.000Z');
 const SECOND = 1000;
@@ -46,4 +46,44 @@ test('hold time is zero with no start time and never negative', () => {
   expect(holdSecondsAt(null, NOON)).toBe(0);
   expect(holdSecondsAt(NOON + 5 * SECOND, NOON)).toBe(0);
   expect(holdSecondsAt(NOON - 12 * SECOND, NOON)).toBe(12);
+});
+
+test('a capture credits the old holder and counts a capture for the new one', () => {
+  const before = { holder: 'RED', holderUsername: 'Will', holdStart: NOON - 30 * SECOND };
+  const after = { holder: 'BLUE', holderUsername: 'Bryce', holdStart: NOON };
+
+  expect(ownershipChange(before, after, NOON)).toEqual({
+    previousId: 'will',
+    heldSeconds: 30,
+    nextId: 'bryce'
+  });
+});
+
+test('starting a contest without changing the holder is not an ownership change', () => {
+  const before = { holder: 'RED', holderUsername: 'Will', holdStart: NOON - 30 * SECOND };
+  const after = { ...before, contest: { id: 'c1' } };
+
+  expect(ownershipChange(before, after, NOON)).toBe(null);
+});
+
+test('the first capture of an empty button only counts for the new holder', () => {
+  const before = { holder: null, holderUsername: null, holdStart: null };
+  const after = { holder: 'RED', holderUsername: 'Will', holdStart: NOON };
+
+  expect(ownershipChange(before, after, NOON)).toEqual({
+    previousId: null,
+    heldSeconds: 0,
+    nextId: 'will'
+  });
+});
+
+test('a kick credits the old holder with no new holder', () => {
+  const before = { holder: 'BLUE', holderUsername: 'Bryce', holdStart: NOON - 8 * SECOND };
+  const after = { holder: null, holderUsername: null, holdStart: null };
+
+  expect(ownershipChange(before, after, NOON)).toEqual({
+    previousId: 'bryce',
+    heldSeconds: 8,
+    nextId: null
+  });
 });

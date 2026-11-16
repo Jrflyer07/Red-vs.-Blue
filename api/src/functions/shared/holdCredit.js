@@ -1,21 +1,30 @@
 const { players } = require('./cosmos');
-const { holdSecondsAt } = require('./playerStats');
+const { ownershipChange } = require('./playerStats');
 
-async function creditHoldTime(previousState, endTime, context) {
-  if (!previousState.holder || !previousState.holderUsername) {
-    return;
-  }
-
-  const previousId = previousState.holderUsername.toLowerCase();
-  const heldSeconds = holdSecondsAt(previousState.holdStart, endTime);
-
+async function incrementField(playerId, path, value, context) {
   try {
-    await players.item(previousId, previousId).patch([
-      { op: 'incr', path: '/heldSeconds', value: heldSeconds }
+    await players.item(playerId, playerId).patch([
+      { op: 'incr', path, value }
     ]);
   } catch (error) {
-    context.log('Could not update held time: ' + error.message);
+    context?.log?.('Could not update ' + path + ' for ' + playerId + ': ' + error.message);
   }
 }
 
-module.exports = { creditHoldTime };
+async function recordOwnershipChange(before, after, endTime, context) {
+  const change = ownershipChange(before, after, endTime);
+
+  if (!change) {
+    return;
+  }
+
+  if (change.previousId) {
+    await incrementField(change.previousId, '/heldSeconds', change.heldSeconds, context);
+  }
+
+  if (change.nextId) {
+    await incrementField(change.nextId, '/pressCount', 1, context);
+  }
+}
+
+module.exports = { recordOwnershipChange };

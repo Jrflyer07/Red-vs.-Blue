@@ -10,6 +10,8 @@ const database = client.database('redvsblue');
 
 const players = database.container('players');
 const game = database.container('game');
+const pressLog = database.container('pressLog');
+const history = database.container('history');
 
 // Helper to handle initial auto-creation on a fresh DB (TR-11)
 async function getOrCreateGameState(stateId = 'game-state-main') {
@@ -35,4 +37,4 @@ async function getOrCreateGameState(stateId = 'game-state-main') {
   return created;
 }
 
-module.exports = { players, game, getOrCreateGameState };
+module.exports = { players, game, pressLog, history, getOrCreateGameState };

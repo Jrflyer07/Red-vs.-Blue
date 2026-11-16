@@ -30,7 +30,9 @@ function resetState(state) {
     holderUsername: null,
     holdStart: null,
     redTotal: 0,
-    blueTotal: 0
+    blueTotal: 0,
+    contest: null,
+    cooldowns: {}
   };
 }
 
@@ -44,7 +46,8 @@ function kickState(state, now = Date.now()) {
   return {
     ...bankAndSwitchHolder({ ...state, holder }, null, now),
     holderUsername: null,
-    holdStart: null
+    holdStart: null,
+    contest: null
   };
 }
 

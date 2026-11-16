@@ -1,20 +1,21 @@
 const { app } = require('@azure/functions');
 const { players, game, getOrCreateGameState } = require('./shared/cosmos');
-const { bankAndSwitchHolder } = require('./shared/scoring');
+const { planCapture } = require('./shared/captureDecision');
+const { settleExpiredContest } = require('./shared/contestTimeout');
+const { logPress } = require('./shared/pressLog');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
-const { creditHoldTime } = require('./shared/holdCredit');
+const { verifyPlayerSession } = require('./shared/playerSession');
+const { recordOwnershipChange } = require('./shared/holdCredit');
 
-async function recordCapture(playerId, previousState, captureTime, context) {
-  try {
-    await players.item(playerId, playerId).patch([
-      { op: 'incr', path: '/pressCount', value: 1 }
-    ]);
-  } catch (error) {
-    context.log('Could not update press count: ' + error.message);
+function captureDenial(decision) {
+  if (decision.reason === 'cooldown') {
+    return { status: 429, jsonBody: {
+      error: 'cooldown', retryAt: decision.retryAt
+    } };
   }
-
-  await creditHoldTime(previousState, captureTime, context);
+  return { status: 409, body: decision.reason === 'contest-active'
+    ? 'Button is currently contested.' : 'Your team already holds it.' };
 }
 
 app.http('gameState', {
@@ -25,17 +26,35 @@ app.http('gameState', {
     // Get or auto-create document on fresh DB (TR-11)
     const state = await getOrCreateGameState();
 
-    // GET: Fetch current state
+    // GET also finalizes expired contests so no absent player can lock the flag.
     if (request.method === 'GET') {
-      return {
-        status: 200,
-        jsonBody: buildStateResponse(state)
-      };
+      let latest = state;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const settleTime = Date.now();
+        const settlement = settleExpiredContest(latest, settleTime);
+        if (settlement.status !== 'forfeit') {
+          return { status: 200, jsonBody: buildStateResponse(latest) };
+        }
+        if (!latest._etag) throw new Error('Game-state ETag missing.');
+        try {
+          const { resource } = await game.item(latest.id, latest.id).replace(
+            settlement.state,
+            { accessCondition: { type: 'IfMatch', condition: latest._etag } }
+          );
+          await recordOwnershipChange(latest, resource, settleTime, context);
+          return { status: 200, jsonBody: buildStateResponse(resource) };
+        } catch (error) {
+          if (error.statusCode === 412 || Number(error.code) === 412) {
+            latest = await getOrCreateGameState();
+            continue;
+          }
+          throw error;
+        }
+      }
+      return { status: 409, body: 'Game changed. Please refresh.' };
     }
 
-    // POST: Handle button press & switch holders (TR-13)
-    
-    // POST: Capture the button
+    // POST: Immediately capture an empty flag, or start an RPS contest
     if (request.method === 'POST') {
       let body;
 
@@ -72,23 +91,27 @@ app.http('gameState', {
         return { status: 401, body: 'Invalid player.' };
       }
 
-      const team = player.team.toUpperCase();
+      // A username is public. Require the browser's secret session token
+      // before changing scores, capturing a flag, or reserving rate limits.
+      if (!verifyPlayerSession(player, body?.sessionToken)) {
+        return { status: 401, body: 'Invalid player session.' };
+      }
+
       let latestState = state;
       let rateReserved = false;
 
       // Retry if another player updates the game simultaneously.
       for (let attempt = 0; attempt < 5; attempt++) {
-        const holder = latestState.holder
-          ? latestState.holder.toUpperCase()
-          : null;
+        const captureTime = Date.now();
+        const decision = planCapture(latestState, player, captureTime);
 
-        // Can't capture if your team already holds the button.
-        if (holder === team) {
-          return { status: 409, body: 'Your team already holds it.' };
+
+        if (decision.status === 'blocked' && !decision.changed) {
+          return captureDenial(decision);
         }
 
         // Allow one press per second per player.
-        if (!rateReserved) {
+        if (decision.status !== 'blocked' && !rateReserved) {
           const now = Date.now();
           const lastPress = Number(player.lastPressAt || 0);
 
@@ -124,32 +147,43 @@ app.http('gameState', {
           }
         }
 
-        // Use Bryce's helper to bank time and change owners.
-        const captureTime = Date.now();
-        const updatedState = {
-          ...bankAndSwitchHolder({ ...latestState, holder }, team, captureTime),
-          holderUsername: player.username
-        };
-
         if (!latestState._etag) {
           throw new Error('Game-state ETag missing.');
         }
 
         try {
           const { resource } = await game
-            .item(updatedState.id, updatedState.id)
-            .replace(updatedState, {
+            .item(decision.state.id, decision.state.id)
+            .replace(decision.state, {
               accessCondition: {
                 type: 'IfMatch',
                 condition: latestState._etag
               }
             });
 
-          await recordCapture(playerId, latestState, captureTime, context);
+          await recordOwnershipChange(latestState, resource, captureTime, context);
 
+
+          const heldBefore = latestState.holder
+            ? String(latestState.holder).toUpperCase() : null;
+          const heldNow = resource.holder
+            ? String(resource.holder).toUpperCase() : null;
+
+          if (decision.status !== 'blocked' && heldNow && heldNow !== heldBefore) {
+            try {
+              await logPress({ playerId, team: heldNow });
+            } catch (err) {
+              context.error?.('press log failed', err); // never fail the press over the feed
+            }
+          }
+
+          if (decision.status === 'blocked') return captureDenial(decision);
           return {
-            status: 200,
-            jsonBody: buildStateResponse(resource)
+            status: decision.status === 'contest-started' ? 202 : 200,
+            jsonBody: {
+              ...buildStateResponse(resource),
+              action: decision.status
+            }
           };
 
         } catch (error) {
