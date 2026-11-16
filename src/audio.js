@@ -181,7 +181,7 @@
       <label>Rock paper scissors volume <span class="audio-value" id="valRps"></span>
         <input type="range" id="volRps" min="0" max="100" step="1"></label>
 
-      <label>Sound effects volume (button click) <span class="audio-value" id="valSfx"></span>
+      <label>Sound effects volume <span class="audio-value" id="valSfx"></span>
         <input type="range" id="volSfx" min="0" max="100" step="1"></label>
 
       <label><input type="checkbox" id="optMuteAll"> Mute all website sound</label>
