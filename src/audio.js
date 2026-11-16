@@ -5,8 +5,8 @@
   // ---- Edit these to match your files ----
   const FILES = { intro: 'audio/intro.wav', loop: 'audio/loop.wav', click: 'audio/click.wav' };
   const RPS_SONGS = [
-    { id: 'dual', label: 'Dual', src: 'audio/dual.wav' },
-    { id: 'monk', label: 'Monk', src: 'audio/monk.wav' },
+    { id: 'dual', label: 'Dual', src: 'audio/Dual.wav' },
+    { id: 'monk', label: 'Monk', src: 'audio/Monk.wav' },
     { id: '8bit', label: '8-bit', src: 'audio/8bit.wav' },
   ];
   // ----------------------------------------
