@@ -238,6 +238,9 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
         order: 4;
     }
 
+    /* Spectator panel comes below the button and above the feed. */
+    .rps-spectator { order: 5; width: calc(100% - 32px); }
+
     /* Kill feed goes BELOW the button */
     .kill-feed-panel {
         position: relative !important;
@@ -245,7 +248,7 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
         left: auto !important;
         transform: none !important;
 
-        order: 5;
+        order: 6;
         width: calc(100% - 32px) !important;
         max-width: 400px;
         margin: 30px auto 40px !important;
@@ -277,3 +280,41 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
     }
 }
 
+
+/* Read-only RPS spectator panel. Visible only during a duel or recent result. */
+.rps-spectator[hidden], .rps-spectator-panel[hidden] { display: none !important; }
+.rps-spectator {
+    box-sizing: border-box;
+    width: min(100%, 30rem);
+    margin: 1rem auto 2rem;
+}
+#spectatorToggle {
+    font: inherit;
+    font-weight: 700;
+    padding: .7rem 1.2rem;
+    border-radius: .75rem;
+    border: 2px solid #64748b;
+    color: #172033;
+    background: #f1f5f9;
+    cursor: pointer;
+}
+#spectatorToggle:hover { background: #e2e8f0; }
+#spectatorToggle:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
+.rps-spectator-panel {
+    box-sizing: border-box;
+    margin-top: .8rem;
+    padding: 1rem;
+    border: 2px solid #cbd5e1;
+    border-radius: 1rem;
+    background: #f8fafc;
+    color: #172033;
+    overflow-wrap: anywhere;
+}
+.rps-spectator-panel h2 { margin: 0 0 .6rem; font-size: clamp(1.1rem, 4vw, 1.35rem); }
+#spectatorMatchup { font-weight: 700; margin: .4rem 0; }
+#spectatorRound { margin: .3rem 0; }
+#spectatorClock { font-size: 1.35rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.rps-spectator-status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.rps-spectator-status p { background: #e2e8f0; border-radius: .5rem; padding: .6rem .35rem; margin: 0; font-size: .9rem; }
+#spectatorAnnouncement { min-height: 1.4em; margin: .85rem 0 .2rem; font-weight: 600; }
+@media (max-width: 380px) { .rps-spectator-status { grid-template-columns: 1fr; } }

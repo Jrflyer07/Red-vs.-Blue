@@ -81,6 +81,7 @@ function applyState(state) {
     }
 
     rpsUi.sync(state);
+    spectatorUi.sync(state);
 
     if (state.lastContest && playerUsername &&
         String(state.lastContest.loserUsername).toLowerCase() === playerUsername.toLowerCase()) {
@@ -100,6 +101,7 @@ function invalidateSession() {
     document.getElementById('gameArea').hidden = true;
     usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
     rpsUi.refresh();
+    spectatorUi.refresh();
     updateDisplay();
 }
 
@@ -136,6 +138,11 @@ const rpsUi = window.RpsUI.create({
     getUsername: () => playerUsername,
     submitMove: submitRpsMove,
     onState: applyState
+});
+
+// The spectator never sends a move or changes game state; it only reads /api/state.
+const spectatorUi = window.RpsSpectator.create({
+    getUsername: () => playerUsername
 });
 
 // Read the current game state from Azure.
