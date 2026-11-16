@@ -112,6 +112,60 @@ async function loadStats() {
     }
 }
 
+const DEV_USERNAME = '1974corvette';
+const devPanel = document.getElementById('devPanel');
+const devKeyInput = document.getElementById('devKeyInput');
+const devKickButton = document.getElementById('devKickButton');
+const devResetButton = document.getElementById('devResetButton');
+const devStatus = document.getElementById('devStatus');
+
+async function runDevAction(action) {
+    devStatus.innerText = '';
+    devKickButton.disabled = true;
+    devResetButton.disabled = true;
+
+    try {
+        const response = await fetch('/api/dev', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: playerUsername,
+                key: devKeyInput.value,
+                action: action
+            })
+        });
+
+        if (!response.ok) {
+            devStatus.innerText = await response.text();
+            return;
+        }
+
+        devStatus.innerText = action === 'reset'
+            ? 'Game reset.'
+            : 'Holder kicked off the button.';
+
+        await pollState();
+
+    } catch (error) {
+        console.log(error);
+        devStatus.innerText = 'Dev action failed.';
+
+    } finally {
+        devKickButton.disabled = false;
+        devResetButton.disabled = false;
+    }
+}
+
+devKickButton.addEventListener('click', function() {
+    runDevAction('kick');
+});
+
+devResetButton.addEventListener('click', function() {
+    if (confirm('Reset both scores to zero and clear the button?')) {
+        runDevAction('reset');
+    }
+});
+
 // Will's existing join function, with a few additions.
 async function joinGame(username) {
     const teamText = document.getElementById('team');
@@ -149,6 +203,8 @@ async function joinGame(username) {
                 ? "You're on Red!"
                 : "You're on Blue!";
                 document.getElementById('gameArea').hidden = false;
+
+        devPanel.hidden = playerUsername.toLowerCase() !== DEV_USERNAME;
 
         // Start getting game updates every 2.5 seconds.
         await pollState();

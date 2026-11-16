@@ -3,7 +3,7 @@ const { players, game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
-const { holdSecondsAt } = require('./shared/playerStats');
+const { creditHoldTime } = require('./shared/holdCredit');
 
 async function recordCapture(playerId, previousState, captureTime, context) {
   try {
@@ -14,20 +14,7 @@ async function recordCapture(playerId, previousState, captureTime, context) {
     context.log('Could not update press count: ' + error.message);
   }
 
-  if (!previousState.holder || !previousState.holderUsername) {
-    return;
-  }
-
-  const previousId = previousState.holderUsername.toLowerCase();
-  const heldSeconds = holdSecondsAt(previousState.holdStart, captureTime);
-
-  try {
-    await players.item(previousId, previousId).patch([
-      { op: 'incr', path: '/heldSeconds', value: heldSeconds }
-    ]);
-  } catch (error) {
-    context.log('Could not update held time: ' + error.message);
-  }
+  await creditHoldTime(previousState, captureTime, context);
 }
 
 app.http('gameState', {
