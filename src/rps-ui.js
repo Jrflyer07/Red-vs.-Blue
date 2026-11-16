@@ -68,7 +68,7 @@
         let drawUntil = 0;
 
         // A round increase within the same contest means the server found a tie.
-        // The notification is only visual; the server's deadline keeps running.
+        // The notification is visual; the server gives the new round a fresh deadline.
         function showingDraw(contest) {
             return Boolean(contest && drawRoundId === `${contest.id}:${contest.round}` &&
                 Date.now() < drawUntil);
