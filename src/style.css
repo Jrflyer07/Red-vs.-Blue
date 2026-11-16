@@ -65,3 +65,36 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
     text-align: center;
     color: #777;
 }
+
+#playerStats {
+    max-width: 320px;
+    margin: 2rem auto 0;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    background: #f3f4f6;
+}
+
+#playerStats h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+}
+
+#playerStats dl {
+    display: flex;
+    justify-content: space-around;
+    margin: 0;
+}
+
+#playerStats dt {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+#playerStats dd {
+    margin: 0.25rem 0 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+body[data-team="red"] #playerStats dd { color: #c62828; }
+body[data-team="blue"] #playerStats dd { color: #1565c0; }

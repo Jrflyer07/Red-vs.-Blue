@@ -3,6 +3,32 @@ const { players, game, getOrCreateGameState } = require('./shared/cosmos');
 const { bankAndSwitchHolder } = require('./shared/scoring');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
+const { holdSecondsAt } = require('./shared/playerStats');
+
+async function recordCapture(playerId, previousState, captureTime, context) {
+  try {
+    await players.item(playerId, playerId).patch([
+      { op: 'incr', path: '/pressCount', value: 1 }
+    ]);
+  } catch (error) {
+    context.log('Could not update press count: ' + error.message);
+  }
+
+  if (!previousState.holder || !previousState.holderUsername) {
+    return;
+  }
+
+  const previousId = previousState.holderUsername.toLowerCase();
+  const heldSeconds = holdSecondsAt(previousState.holdStart, captureTime);
+
+  try {
+    await players.item(previousId, previousId).patch([
+      { op: 'incr', path: '/heldSeconds', value: heldSeconds }
+    ]);
+  } catch (error) {
+    context.log('Could not update held time: ' + error.message);
+  }
+}
 
 app.http('gameState', {
   methods: ['GET', 'POST'],
@@ -112,8 +138,9 @@ app.http('gameState', {
         }
 
         // Use Bryce's helper to bank time and change owners.
+        const captureTime = Date.now();
         const updatedState = {
-          ...bankAndSwitchHolder({ ...latestState, holder }, team, Date.now()),
+          ...bankAndSwitchHolder({ ...latestState, holder }, team, captureTime),
           holderUsername: player.username
         };
 
@@ -130,6 +157,8 @@ app.http('gameState', {
                 condition: latestState._etag
               }
             });
+
+          await recordCapture(playerId, latestState, captureTime, context);
 
           return {
             status: 200,

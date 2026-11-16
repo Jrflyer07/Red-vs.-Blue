@@ -62,12 +62,53 @@ async function pollState() {
 
         gameStatus.innerText = '';
         updateDisplay();
+        loadStats();
 
     } catch (error) {
         console.log(error);
         stateLoaded = false;
         gameStatus.innerText = 'Game state unavailable.';
         updateDisplay();
+    }
+}
+
+function formatDuration(totalSeconds) {
+    const seconds = Math.floor(totalSeconds);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remaining = seconds % 60;
+
+    if (hours > 0) {
+        return hours + 'h ' + minutes + 'm ' + remaining + 's';
+    }
+    if (minutes > 0) {
+        return minutes + 'm ' + remaining + 's';
+    }
+    return remaining + 's';
+}
+
+async function loadStats() {
+    if (!playerUsername) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            '/api/stats?username=' + encodeURIComponent(playerUsername)
+        );
+
+        if (!response.ok) {
+            throw new Error('Could not load stats');
+        }
+
+        const stats = await response.json();
+
+        document.getElementById('statCaptures').innerText = stats.pressCount;
+        document.getElementById('statHeld').innerText =
+            formatDuration(stats.heldSeconds);
+
+    } catch (error) {
+        console.log(error);
     }
 }
 
