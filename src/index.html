@@ -62,7 +62,7 @@
   </section>
 
 
-  <!-- daily champions -->>
+  <!-- daily champions -->
   <section class="champions" id="champions" aria-label="Daily Champion Scoreboard">
     <h2>Daily Champions</h2>
     <ol id="champions-list"><li class="champ-empty">Loading...</li></ol>
@@ -89,6 +89,17 @@
         <dd id="statHeld">0s</dd>
       </div>
     </dl>
+  </section>
+
+  <section id="devPanel" aria-label="Dev panel" hidden>
+    <h2>Dev Panel</h2>
+    <label for="devKeyInput">Dev key</label>
+    <input id="devKeyInput" type="password" autocomplete="off">
+    <div class="dev-actions">
+      <button id="devKickButton" type="button">Kick off button</button>
+      <button id="devResetButton" type="button">Reset game</button>
+    </div>
+    <p id="devStatus"></p>
   </section>
 </main>
 

@@ -90,11 +90,62 @@ function applyState(state) {
 
     gameStatus.innerText = rpsUi.notice();
     updateDisplay();
+    loadStats();
 }
 
-        gameStatus.innerText = '';
-        updateDisplay();
-        loadStats();
+function invalidateSession() {
+    forgetSession();
+    playerUsername = null;
+    playerTeam = null;
+    playerSessionToken = null;
+    usernameForm.hidden = false;
+    document.getElementById('gameArea').hidden = true;
+    devPanel.hidden = true;
+    usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
+    rpsUi.refresh();
+    spectatorUi.refresh();
+    updateDisplay();
+}
+
+async function submitRpsMove({ contestId, round, move }) {
+    const response = await fetch('/api/contest/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: playerUsername,
+            sessionToken: playerSessionToken,
+            contestId, round, move
+        })
+    });
+    const data = await response.json().catch(() => null);
+    if (response.status === 401) {
+        invalidateSession();
+        throw new Error('Your session is no longer valid.');
+    }
+    if (!response.ok) {
+        if (data?.serverNow) applyState(data); // e.g. timeout settlement
+        if (response.status === 409) {
+            // A duel may have ended or advanced while this request was in flight.
+            pollState();
+            throw new Error('This round changed. Checking the latest contest…');
+        }
+        throw new Error(response.status === 403
+            ? 'You are not a participant in this contest.'
+            : 'Move not accepted. Please try again.');
+    }
+    return data;
+}
+
+const rpsUi = window.RpsUI.create({
+    getUsername: () => playerUsername,
+    submitMove: submitRpsMove,
+    onState: applyState
+});
+
+// The spectator never sends a move or changes game state; it only reads /api/state.
+const spectatorUi = window.RpsSpectator.create({
+    getUsername: () => playerUsername
+});
 
 // Read the current game state from Azure.
 async function pollState() {
@@ -150,6 +201,66 @@ async function loadStats() {
     }
 }
 
+const DEV_USERNAME = '1974corvette';
+const devPanel = document.getElementById('devPanel');
+const devKeyInput = document.getElementById('devKeyInput');
+const devKickButton = document.getElementById('devKickButton');
+const devResetButton = document.getElementById('devResetButton');
+const devStatus = document.getElementById('devStatus');
+
+async function runDevAction(action) {
+    devStatus.innerText = '';
+    devKickButton.disabled = true;
+    devResetButton.disabled = true;
+
+    try {
+        const response = await fetch('/api/dev', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: playerUsername,
+                sessionToken: playerSessionToken,
+                key: devKeyInput.value,
+                action: action
+            })
+        });
+
+        if (response.status === 401) {
+            invalidateSession();
+            return;
+        }
+
+        if (!response.ok) {
+            devStatus.innerText = await response.text();
+            return;
+        }
+
+        devStatus.innerText = action === 'reset'
+            ? 'Game reset.'
+            : 'Holder kicked off the button.';
+
+        await pollState();
+
+    } catch (error) {
+        console.log(error);
+        devStatus.innerText = 'Dev action failed.';
+
+    } finally {
+        devKickButton.disabled = false;
+        devResetButton.disabled = false;
+    }
+}
+
+devKickButton.addEventListener('click', function() {
+    runDevAction('kick');
+});
+
+devResetButton.addEventListener('click', function() {
+    if (confirm('Reset both scores to zero and clear the button?')) {
+        runDevAction('reset');
+    }
+});
+
 // Will's existing join function, with a few additions.
 async function joinGame(username, existingToken = null) {
     const teamText = document.getElementById('team');
@@ -197,6 +308,8 @@ async function joinGame(username, existingToken = null) {
                 ? "You're on Red!"
                 : "You're on Blue!";
                 document.getElementById('gameArea').hidden = false;
+
+        devPanel.hidden = playerUsername.toLowerCase() !== DEV_USERNAME;
 
         // Start getting game updates second.
         await pollState();

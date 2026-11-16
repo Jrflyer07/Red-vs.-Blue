@@ -5,6 +5,7 @@ const { verifyPlayerSession } = require('./shared/playerSession');
 const { submitContestMove } = require('./shared/contestRound');
 const { settleExpiredContest } = require('./shared/contestTimeout');
 const { buildStateResponse } = require('./shared/stateResponse');
+const { recordOwnershipChange } = require('./shared/holdCredit');
 
 function isPreconditionFailure(error) {
   return error?.statusCode === 412 || Number(error?.code) === 412;
@@ -16,7 +17,7 @@ app.http('contestMove', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'contest/move',
-  handler: async (request) => {
+  handler: async (request, context) => {
     let body;
     try {
       body = await request.json();
@@ -85,6 +86,7 @@ app.http('contestMove', {
           result.state,
           { accessCondition: { type: 'IfMatch', condition: state._etag } }
         );
+        await recordOwnershipChange(state, resource, now, context);
         return {
           status: result.status === 'waiting' ? 202
             : result.status === 'expired' ? 409 : 200,

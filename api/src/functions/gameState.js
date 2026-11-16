@@ -5,32 +5,8 @@ const { settleExpiredContest } = require('./shared/contestTimeout');
 const { logPress } = require('./shared/pressLog');
 const { buildStateResponse } = require('./shared/stateResponse');
 const { isValidUsername } = require('./shared/username');
-const { holdSecondsAt } = require('./shared/playerStats');
-
-async function recordCapture(playerId, previousState, captureTime, context) {
-  try {
-    await players.item(playerId, playerId).patch([
-      { op: 'incr', path: '/pressCount', value: 1 }
-    ]);
-  } catch (error) {
-    context.log('Could not update press count: ' + error.message);
-  }
-
-  if (!previousState.holder || !previousState.holderUsername) {
-    return;
-  }
-
-  const previousId = previousState.holderUsername.toLowerCase();
-  const heldSeconds = holdSecondsAt(previousState.holdStart, captureTime);
-
-  try {
-    await players.item(previousId, previousId).patch([
-      { op: 'incr', path: '/heldSeconds', value: heldSeconds }
-    ]);
-  } catch (error) {
-    context.log('Could not update held time: ' + error.message);
-  }
 const { verifyPlayerSession } = require('./shared/playerSession');
+const { recordOwnershipChange } = require('./shared/holdCredit');
 
 function captureDenial(decision) {
   if (decision.reason === 'cooldown') {
@@ -54,7 +30,8 @@ app.http('gameState', {
     if (request.method === 'GET') {
       let latest = state;
       for (let attempt = 0; attempt < 5; attempt++) {
-        const settlement = settleExpiredContest(latest, Date.now());
+        const settleTime = Date.now();
+        const settlement = settleExpiredContest(latest, settleTime);
         if (settlement.status !== 'forfeit') {
           return { status: 200, jsonBody: buildStateResponse(latest) };
         }
@@ -64,6 +41,7 @@ app.http('gameState', {
             settlement.state,
             { accessCondition: { type: 'IfMatch', condition: latest._etag } }
           );
+          await recordOwnershipChange(latest, resource, settleTime, context);
           return { status: 200, jsonBody: buildStateResponse(resource) };
         } catch (error) {
           if (error.statusCode === 412 || Number(error.code) === 412) {
@@ -124,7 +102,8 @@ app.http('gameState', {
 
       // Retry if another player updates the game simultaneously.
       for (let attempt = 0; attempt < 5; attempt++) {
-        const decision = planCapture(latestState, player, Date.now());
+        const captureTime = Date.now();
+        const decision = planCapture(latestState, player, captureTime);
 
 
         if (decision.status === 'blocked' && !decision.changed) {
@@ -168,13 +147,6 @@ app.http('gameState', {
           }
         }
 
-        // Use Bryce's helper to bank time and change owners.
-        const captureTime = Date.now();
-        const updatedState = {
-          ...bankAndSwitchHolder({ ...latestState, holder }, team, captureTime),
-          holderUsername: player.username
-        };
-
         if (!latestState._etag) {
           throw new Error('Game-state ETag missing.');
         }
@@ -189,8 +161,23 @@ app.http('gameState', {
               }
             });
 
-          await recordCapture(playerId, latestState, captureTime, context);
+          await recordOwnershipChange(latestState, resource, captureTime, context);
 
+
+          const heldBefore = latestState.holder
+            ? String(latestState.holder).toUpperCase() : null;
+          const heldNow = resource.holder
+            ? String(resource.holder).toUpperCase() : null;
+
+          if (decision.status !== 'blocked' && heldNow && heldNow !== heldBefore) {
+            try {
+              await logPress({ playerId, team: heldNow });
+            } catch (err) {
+              context.error?.('press log failed', err); // never fail the press over the feed
+            }
+          }
+
+          if (decision.status === 'blocked') return captureDenial(decision);
           return {
             status: decision.status === 'contest-started' ? 202 : 200,
             jsonBody: {
