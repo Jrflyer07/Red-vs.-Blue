@@ -1,0 +1,16 @@
+name: Daily scoreboard reset
+on:
+  schedule:
+    - cron: '59 4 * * *'   # 11:59 PM Central in summer
+    - cron: '59 5 * * *'   # 11:59 PM Central in winter
+    - cron: '20 5 * * *'   # catch-up runs in case GitHub is late
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reset endpoint
+        run: |
+          curl --fail-with-body -sS -X POST "${{ secrets.SITE_URL }}/api/reset-day" \
+            -H "x-reset-secret: ${{ secrets.RESET_SECRET }}"
