@@ -77,21 +77,18 @@
 
   <p id="gameStatus">Waiting for game state...</p>
 
-  <!-- Read-only RPS spectator view for everyone who is not in the duel. -->
-  <section id="spectatorArea" class="rps-spectator" aria-label="Spectate rock paper scissors" hidden>
-    <button type="button" id="spectatorToggle" aria-expanded="false"
-      aria-controls="spectatorPanel">Spectate RPS</button>
-    <div id="spectatorPanel" class="rps-spectator-panel" hidden>
-      <h2 id="spectatorTitle">Rock • Paper • Scissors</h2>
-      <p id="spectatorMatchup"></p>
-      <p id="spectatorRound"></p>
-      <p id="spectatorClock" aria-live="off"></p>
-      <div class="rps-spectator-status">
-        <p id="spectatorDefender"></p>
-        <p id="spectatorChallenger"></p>
+  <section id="playerStats" aria-label="Your stats">
+    <h2>Your Stats</h2>
+    <dl>
+      <div class="stat">
+        <dt>Captures</dt>
+        <dd id="statCaptures">0</dd>
       </div>
-      <p id="spectatorAnnouncement" role="status" aria-live="polite"></p>
-    </div>
+      <div class="stat">
+        <dt>Time held</dt>
+        <dd id="statHeld">0s</dd>
+      </div>
+    </dl>
   </section>
 </main>
 

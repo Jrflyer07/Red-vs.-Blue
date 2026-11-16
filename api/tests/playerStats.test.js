@@ -1,15 +1,49 @@
-const { rpsSummary } = require('../src/functions/shared/playerStats');
+const { holdSecondsAt, buildPlayerStats } = require('../src/functions/shared/playerStats');
 
-const rows = Array.from({ length: 12 }, (_, i) => ({ username: `p${i}`, team: i % 2 ? 'red' : 'blue', rpsWins: 12 - i, rpsLosses: 0 }));
+const NOON = Date.parse('2026-10-05T12:00:00.000Z');
+const SECOND = 1000;
 
-test('a player in the top 10 gets their rank and the top 10 flag', () => {
-  expect(rpsSummary(rows, 'P2')).toEqual({ wins: 10, losses: 0, rank: 3, rankedPlayers: 12, inTop10: true });
+test('a new player starts with zero presses and zero time held', () => {
+  const player = { id: 'will', username: 'Will', team: 'red' };
+  const state = { holder: null, holderUsername: null, holdStart: null };
+
+  expect(buildPlayerStats(player, state, NOON)).toEqual({
+    username: 'Will',
+    team: 'red',
+    pressCount: 0,
+    heldSeconds: 0,
+    holding: false
+  });
 });
 
-test('a player outside the top 10 still gets their rank', () => {
-  expect(rpsSummary(rows, 'p11')).toEqual({ wins: 1, losses: 0, rank: 12, rankedPlayers: 12, inTop10: false });
+test('saved presses and time held are returned when not holding', () => {
+  const player = { id: 'will', username: 'Will', team: 'red', pressCount: 4, heldSeconds: 75 };
+  const state = { holder: 'BLUE', holderUsername: 'Bryce', holdStart: NOON - 30 * SECOND };
+  const result = buildPlayerStats(player, state, NOON);
+
+  expect(result.pressCount).toBe(4);
+  expect(result.heldSeconds).toBe(75);
+  expect(result.holding).toBe(false);
 });
 
-test('a player with no rock paper scissors games is not ranked yet', () => {
-  expect(rpsSummary(rows, 'newbie')).toEqual({ wins: 0, losses: 0, rank: null, rankedPlayers: 12, inTop10: false });
+test('the current hold counts toward time held while the player holds the button', () => {
+  const player = { id: 'will', username: 'Will', team: 'red', pressCount: 2, heldSeconds: 10 };
+  const state = { holder: 'RED', holderUsername: 'will', holdStart: NOON - 45 * SECOND };
+  const result = buildPlayerStats(player, state, NOON);
+
+  expect(result.heldSeconds).toBe(55);
+  expect(result.holding).toBe(true);
+});
+
+test('a teammate holding the button does not add to this player', () => {
+  const player = { id: 'will', username: 'Will', team: 'red', heldSeconds: 10 };
+  const state = { holder: 'RED', holderUsername: 'Peyton', holdStart: NOON - 45 * SECOND };
+
+  expect(buildPlayerStats(player, state, NOON).heldSeconds).toBe(10);
+});
+
+test('hold time is zero with no start time and never negative', () => {
+  expect(holdSecondsAt(null, NOON)).toBe(0);
+  expect(holdSecondsAt(NOON + 5 * SECOND, NOON)).toBe(0);
+  expect(holdSecondsAt(NOON - 12 * SECOND, NOON)).toBe(12);
 });

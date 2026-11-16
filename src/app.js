@@ -92,58 +92,9 @@ function applyState(state) {
     updateDisplay();
 }
 
-function invalidateSession() {
-    forgetSession();
-    playerUsername = null;
-    playerTeam = null;
-    playerSessionToken = null;
-    usernameForm.hidden = false;
-    document.getElementById('gameArea').hidden = true;
-    usernameError.innerText = 'Session expired or invalid. Join with a new name or recover your account.';
-    rpsUi.refresh();
-    spectatorUi.refresh();
-    updateDisplay();
-}
-
-async function submitRpsMove({ contestId, round, move }) {
-    const response = await fetch('/api/contest/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: playerUsername,
-            sessionToken: playerSessionToken,
-            contestId, round, move
-        })
-    });
-    const data = await response.json().catch(() => null);
-    if (response.status === 401) {
-        invalidateSession();
-        throw new Error('Your session is no longer valid.');
-    }
-    if (!response.ok) {
-        if (data?.serverNow) applyState(data); // e.g. timeout settlement
-        if (response.status === 409) {
-            // A duel may have ended or advanced while this request was in flight.
-            pollState();
-            throw new Error('This round changed. Checking the latest contest…');
-        }
-        throw new Error(response.status === 403
-            ? 'You are not a participant in this contest.'
-            : 'Move not accepted. Please try again.');
-    }
-    return data;
-}
-
-const rpsUi = window.RpsUI.create({
-    getUsername: () => playerUsername,
-    submitMove: submitRpsMove,
-    onState: applyState
-});
-
-// The spectator never sends a move or changes game state; it only reads /api/state.
-const spectatorUi = window.RpsSpectator.create({
-    getUsername: () => playerUsername
-});
+        gameStatus.innerText = '';
+        updateDisplay();
+        loadStats();
 
 // Read the current game state from Azure.
 async function pollState() {
@@ -156,6 +107,46 @@ async function pollState() {
         stateLoaded = false;
         gameStatus.innerText = 'Game state unavailable.';
         updateDisplay();
+    }
+}
+
+function formatDuration(totalSeconds) {
+    const seconds = Math.floor(totalSeconds);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remaining = seconds % 60;
+
+    if (hours > 0) {
+        return hours + 'h ' + minutes + 'm ' + remaining + 's';
+    }
+    if (minutes > 0) {
+        return minutes + 'm ' + remaining + 's';
+    }
+    return remaining + 's';
+}
+
+async function loadStats() {
+    if (!playerUsername) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            '/api/stats?username=' + encodeURIComponent(playerUsername)
+        );
+
+        if (!response.ok) {
+            throw new Error('Could not load stats');
+        }
+
+        const stats = await response.json();
+
+        document.getElementById('statCaptures').innerText = stats.pressCount;
+        document.getElementById('statHeld').innerText =
+            formatDuration(stats.heldSeconds);
+
+    } catch (error) {
+        console.log(error);
     }
 }
 

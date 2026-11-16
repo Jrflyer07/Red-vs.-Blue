@@ -1,16 +1,31 @@
-const { rankPlayers } = require('./rpsStats');
+function holdSecondsAt(holdStart, now) {
+  if (!holdStart) {
+    return 0;
+  }
+  return Math.max(0, (now - holdStart) / 1000);
+}
 
-function rpsSummary(rows, username) {
-  const ranked = rankPlayers(rows, Infinity);
-  const name = String(username || '').toLowerCase();
-  const me = ranked.find((row) => row.username.toLowerCase() === name);
+function isHolding(player, state) {
+  return Boolean(
+    state &&
+    state.holder &&
+    state.holderUsername &&
+    state.holderUsername.toLowerCase() === player.username.toLowerCase()
+  );
+}
+
+function buildPlayerStats(player, state, now = Date.now()) {
+  const holding = isHolding(player, state);
+  const savedSeconds = Number(player.heldSeconds || 0);
+  const currentSeconds = holding ? holdSecondsAt(state.holdStart, now) : 0;
+
   return {
-    wins: me ? me.wins : 0,
-    losses: me ? me.losses : 0,
-    rank: me ? me.rank : null,
-    rankedPlayers: ranked.length,
-    inTop10: Boolean(me && me.rank <= 10),
+    username: player.username,
+    team: player.team,
+    pressCount: Number(player.pressCount || 0),
+    heldSeconds: savedSeconds + currentSeconds,
+    holding
   };
 }
 
-module.exports = { rpsSummary };
+module.exports = { holdSecondsAt, buildPlayerStats };
