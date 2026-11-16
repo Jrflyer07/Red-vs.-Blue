@@ -1,5 +1,6 @@
 
 const { resolveRpsRound } = require('./rps');
+const { CONTEST_DURATION_MS } = require('./contest');
 const { bankAndSwitchHolder } = require('./scoring');
 
 const COOLDOWN_MS = 30_000;
@@ -49,7 +50,9 @@ function submitContestMove(state, username, move, now = Date.now()) {
           ...updatedContest,
           defenderMove: null,
           challengerMove: null,
-          round: updatedContest.round + 1
+          round: updatedContest.round + 1,
+          // Each tied round begins a fresh 30-second decision window.
+          expiresAt: now + CONTEST_DURATION_MS
         }
       }
     };

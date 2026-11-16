@@ -67,6 +67,35 @@ test('tie starts another round without transferring the flag', () => {
   expect(result.state.contest.round).toBe(2);
   expect(result.state.contest.defenderMove).toBeNull();
   expect(result.state.contest.challengerMove).toBeNull();
+  expect(result.state.contest.expiresAt).toBe(36000); // Tie at t=6000 + 30 seconds
+  expect(result.state.contest.startedAt).toBe(1000); // Contest identity is unchanged
+});
+
+test('a late draw gives BOTH players another full 30 seconds', () => {
+  const first = submitContestMove(makeState(), 'Alice', 'rock', 5000);
+  const tie = submitContestMove(first.state, 'Bob', 'rock', 30000);
+  expect(tie.status).toBe('tie');
+  expect(tie.state.contest.expiresAt).toBe(60000);
+
+  // The initial contest would have expired at 31000; round two stays live.
+  const secondRoundFirst = submitContestMove(tie.state, 'Alice', 'paper', 32000);
+  expect(secondRoundFirst.status).toBe('waiting');
+  const secondRoundSecond = submitContestMove(secondRoundFirst.state, 'Bob', 'scissors', 33000);
+  expect(secondRoundSecond.status).toBe('resolved');
+  expect(secondRoundSecond.winner).toBe('challenger');
+});
+
+test('each successive draw restarts the clock without resetting the contest ID', () => {
+  const first = submitContestMove(makeState(), 'Alice', 'rock', 5000);
+  const tieOne = submitContestMove(first.state, 'Bob', 'rock', 30000);
+  const second = submitContestMove(tieOne.state, 'Alice', 'paper', 32000);
+  const tieTwo = submitContestMove(second.state, 'Bob', 'paper', 59000);
+  expect(tieTwo.status).toBe('tie');
+  expect(tieTwo.state.contest.id).toBe('contest-1');
+  expect(tieTwo.state.contest.round).toBe(3);
+  expect(tieTwo.state.contest.expiresAt).toBe(89000);
+  expect(tieTwo.state.contest.defenderMove).toBeNull();
+  expect(tieTwo.state.contest.challengerMove).toBeNull();
 });
 
 test('player cannot submit twice in the same round', () => {
