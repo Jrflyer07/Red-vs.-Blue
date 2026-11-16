@@ -277,3 +277,44 @@ body[data-team="blue"] #team { background: #e1ecfd; color: #1565c0; }
     }
 }
 
+.champions { max-width: 520px; margin: 14px auto; padding: 10px 14px;
+  border: 1px solid #ddd; border-radius: 10px; text-align: left; }
+.champions h2 { margin: 0 0 8px; font-size: 1.05rem; text-align: center; }
+.champions ol { list-style: none; margin: 0; padding: 0; }
+.champions li { display: flex; justify-content: space-between; gap: 10px;
+  padding: 6px 0; border-top: 1px solid #eee; font-size: .92rem; }
+.champions li:first-child { border-top: none; }
+.champions .champ-empty { justify-content: center; opacity: .7; }
+.champ-day { min-width: 3.5rem; opacity: .75; }
+.champ-team { font-weight: 700; flex: 1; }
+.champ-red { color: #c62828; }
+.champ-blue { color: #1565c0; }
+.champ-none { opacity: .7; }
+.champ-score { opacity: .75; font-variant-numeric: tabular-nums; }
+
+/* Wide screens: put Daily Champions in a right-hand column, mirroring the Kill Feed on the left */
+@media (min-width: 1100px) {
+  .champions {
+    position: absolute;
+    top: 215px;          /* nudge up or down until the title lines up with "Kill Feed" */
+    right: 10px;
+    width: 320px;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    text-align: center;
+  }
+  .champions h2 {
+    margin: 0 0 14px;
+    font-size: 1.5rem;
+  }
+  .champions li {
+    flex-direction: column;   /* day, winner and score stacked and centered */
+    align-items: center;
+    gap: 2px;
+    padding: 10px 0;
+  }
+  .champ-day, .champ-team { min-width: 0; flex: none; }
+  .champ-score { font-size: .85rem; }
+}
