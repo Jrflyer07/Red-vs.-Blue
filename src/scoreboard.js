@@ -411,7 +411,7 @@ setInterval(() => {
     const end = serverNow();
     const start = Math.min(events[0].t, end - 60000);
     const now = scoresAt(end);
-    const top = niceMax(Math.max(now.red, now.blue));
+    const top = niceMax(Math.max(now.red, now.blue, ...events.map((event) => Math.max(event.red, event.blue))));
     const x = (t) => MARGIN.left + ((t - start) / (end - start)) * innerW;
     const y = (v) => MARGIN.top + innerH - (v / top) * innerH;
 
