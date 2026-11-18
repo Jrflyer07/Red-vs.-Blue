@@ -17,14 +17,30 @@ function eventFromState(state, now) {
   };
 }
 
+function isZero(event) {
+  return (Number(event.red) || 0) === 0 && (Number(event.blue) || 0) === 0;
+}
+
+// Totals only grow during a day, so going back to 0-0 means a dev reset.
+// Keep only what happened after the latest one.
+function sinceLastReset(events, event) {
+  const last = events[events.length - 1];
+  if (last && isZero(event) && !isZero(last)) return [];
+  for (let i = events.length - 1; i > 0; i--) {
+    if (isZero(events[i]) && !isZero(events[i - 1])) return events.slice(i);
+  }
+  return events;
+}
+
 function nextHistory(doc, state, now) {
   const round = state.weekId ?? null;
   const sameRound = doc && (doc.round ?? null) === round && Array.isArray(doc.events);
-  const events = sameRound ? doc.events.slice() : [];
+  const saved = sameRound ? doc.events : [];
   const event = eventFromState(state, now);
+  const events = sinceLastReset(saved, event).slice();
   const last = events[events.length - 1];
 
-  let changed = !sameRound;
+  let changed = !sameRound || events.length !== saved.length;
   if (!last) {
     events.push(event);
     changed = true;

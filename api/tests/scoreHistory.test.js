@@ -43,6 +43,44 @@ test('a new day starts a fresh history', () => {
   expect(doc.events).toEqual([{ t: T0, holder: null, username: null, red: 0, blue: 0 }]);
 });
 
+test('a dev reset in the middle of the day starts the history over', () => {
+  const old = { round: day, events: [
+    { t: T0, holder: null, username: null, red: 0, blue: 0 },
+    { t: T0 + 10 * S, holder: 'red', username: 'Will', red: 0, blue: 0 },
+    { t: T0 + 900 * S, holder: 'blue', username: 'Peyton', red: 890, blue: 0 },
+  ] };
+  const state = { weekId: day, holder: null, holdStart: null, redTotal: 0, blueTotal: 0 };
+
+  const { doc, changed } = nextHistory(old, state, T0 + 1000 * S);
+
+  expect(changed).toBe(true);
+  expect(doc.events).toEqual([{ t: T0 + 1000 * S, holder: null, username: null, red: 0, blue: 0 }]);
+});
+
+test('a history saved across a dev reset drops everything from before the reset', () => {
+  const old = { round: day, events: [
+    { t: T0, holder: 'red', username: 'Will', red: 0, blue: 0 },
+    { t: T0 + 900 * S, holder: 'blue', username: 'Peyton', red: 900, blue: 0 },
+    { t: T0 + 1000 * S, holder: 'red', username: 'Jae', red: 0, blue: 0 },
+    { t: T0 + 1100 * S, holder: 'blue', username: 'rogue2', red: 100, blue: 0 },
+  ] };
+  const state = { weekId: day, holder: 'BLUE', holderUsername: 'rogue2', holdStart: T0 + 1100 * S, redTotal: 100, blueTotal: 0 };
+
+  const { doc, changed } = nextHistory(old, state, T0 + 1200 * S);
+
+  expect(changed).toBe(true);
+  expect(doc.events).toEqual(old.events.slice(2));
+});
+
+test('the first capture of the day keeps the start of the day', () => {
+  const start = { round: day, events: [{ t: T0, holder: null, username: null, red: 0, blue: 0 }] };
+  const state = { weekId: day, holder: 'RED', holderUsername: 'Will', holdStart: T0 + 10 * S, redTotal: 0, blueTotal: 0 };
+
+  const { doc } = nextHistory(start, state, T0 + 20 * S);
+
+  expect(doc.events.map((event) => event.t)).toEqual([T0, T0 + 10 * S]);
+});
+
 test('the history never grows past its limit and keeps the start of the day', () => {
   const events = Array.from({ length: MAX_EVENTS }, (_, i) => ({ t: T0 + i * S, holder: i % 2 ? 'red' : 'blue', username: 'x', red: 0, blue: 0 }));
   const state = { weekId: day, holder: 'RED', holderUsername: 'Will', holdStart: T0 + MAX_EVENTS * S, redTotal: 1, blueTotal: 1 };
