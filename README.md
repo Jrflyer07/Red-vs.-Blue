@@ -76,9 +76,4 @@ To run the tests, go to the `api` folder and run `npm test`.
 - A green GitHub Action does not mean the API works. Check the site after you push.
 - There are no passwords. A username is protected by a code that your browser saves, so if you clear your browser data you might not be able to get your name back.
 
-## Not done yet
 
-- Sound and music
-- Showing how many players are online
-- Personal stats for each player
-- Making the site work better on phones
